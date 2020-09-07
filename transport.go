@@ -1,3 +1,4 @@
+// Package transport provides a Transport for github.com/hashicorp/raft over gRPC.
 package transport
 
 import (
@@ -18,6 +19,7 @@ type Manager struct {
 	connections    map[raft.ServerID]*conn
 }
 
+// New creates both components of raft-grpc-transport: a gRPC service and a Raft Transport.
 func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption) *Manager {
 	return &Manager{
 		localAddress: localAddress,
@@ -28,10 +30,12 @@ func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption) *Manage
 	}
 }
 
+// Register the RaftTransport gRPC service on a gRPC server.
 func (m *Manager) Register(s *grpc.Server) {
 	pb.RegisterRaftTransportServer(s, gRPCAPI{m})
 }
 
+// Transport returns a raft.Transport that communicates over gRPC.
 func (m *Manager) Transport() raft.Transport {
 	return raftAPI{m}
 }
