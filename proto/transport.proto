@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "github.com/Jille/raft-grpc-transport/proto";
+
+service RaftTransport {
+  // AppendEntriesPipeline opens an AppendEntries message stream.
+  rpc AppendEntriesPipeline(stream WrappedMessage) returns (stream WrappedMessage) {}
+
+  // AppendEntries performs a single append entries request / response.
+  rpc AppendEntries(WrappedMessage) returns (WrappedMessage) {}
+  // RequestVote is the command used by a candidate to ask a Raft peer for a vote in an election.
+  rpc RequestVote(WrappedMessage) returns (WrappedMessage) {}
+  // TimeoutNow is used to start a leadership transfer to the target node.
+  rpc TimeoutNow(WrappedMessage) returns (WrappedMessage) {}
+  // InstallSnapshot is the command sent to a Raft peer to bootstrap its log (and state machine) from a snapshot on another peer.
+  rpc InstallSnapshot(stream InstallSnapshotRequest) returns (WrappedMessage) {}
+}
+
+message WrappedMessage {
+	bytes data = 1;
+}
+
+message InstallSnapshotRequest {
+	// The first message will contain the request, and no data. All further requests contain only data.
+	WrappedMessage request = 1;
+	bytes data = 2;
+}
