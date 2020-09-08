@@ -29,16 +29,74 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-type WrappedMessage struct {
+type Log_LogType int32
+
+const (
+	Log_LOG_COMMAND                Log_LogType = 0
+	Log_LOG_NOOP                   Log_LogType = 1
+	Log_LOG_ADD_PEER_DEPRECATED    Log_LogType = 2
+	Log_LOG_REMOVE_PEER_DEPRECATED Log_LogType = 3
+	Log_LOG_BARRIER                Log_LogType = 4
+	Log_LOG_CONFIGURATION          Log_LogType = 5
+)
+
+// Enum value maps for Log_LogType.
+var (
+	Log_LogType_name = map[int32]string{
+		0: "LOG_COMMAND",
+		1: "LOG_NOOP",
+		2: "LOG_ADD_PEER_DEPRECATED",
+		3: "LOG_REMOVE_PEER_DEPRECATED",
+		4: "LOG_BARRIER",
+		5: "LOG_CONFIGURATION",
+	}
+	Log_LogType_value = map[string]int32{
+		"LOG_COMMAND":                0,
+		"LOG_NOOP":                   1,
+		"LOG_ADD_PEER_DEPRECATED":    2,
+		"LOG_REMOVE_PEER_DEPRECATED": 3,
+		"LOG_BARRIER":                4,
+		"LOG_CONFIGURATION":          5,
+	}
+)
+
+func (x Log_LogType) Enum() *Log_LogType {
+	p := new(Log_LogType)
+	*p = x
+	return p
+}
+
+func (x Log_LogType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Log_LogType) Descriptor() protoreflect.EnumDescriptor {
+	return file_transport_proto_enumTypes[0].Descriptor()
+}
+
+func (Log_LogType) Type() protoreflect.EnumType {
+	return &file_transport_proto_enumTypes[0]
+}
+
+func (x Log_LogType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Log_LogType.Descriptor instead.
+func (Log_LogType) EnumDescriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{1, 0}
+}
+
+type RPCHeader struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	ProtocolVersion int64 `protobuf:"varint,1,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
 }
 
-func (x *WrappedMessage) Reset() {
-	*x = WrappedMessage{}
+func (x *RPCHeader) Reset() {
+	*x = RPCHeader{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_transport_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -46,13 +104,13 @@ func (x *WrappedMessage) Reset() {
 	}
 }
 
-func (x *WrappedMessage) String() string {
+func (x *RPCHeader) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*WrappedMessage) ProtoMessage() {}
+func (*RPCHeader) ProtoMessage() {}
 
-func (x *WrappedMessage) ProtoReflect() protoreflect.Message {
+func (x *RPCHeader) ProtoReflect() protoreflect.Message {
 	mi := &file_transport_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -64,32 +122,546 @@ func (x *WrappedMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use WrappedMessage.ProtoReflect.Descriptor instead.
-func (*WrappedMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use RPCHeader.ProtoReflect.Descriptor instead.
+func (*RPCHeader) Descriptor() ([]byte, []int) {
 	return file_transport_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *WrappedMessage) GetData() []byte {
+func (x *RPCHeader) GetProtocolVersion() int64 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
+}
+
+type Log struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Index      uint64      `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Term       uint64      `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Type       Log_LogType `protobuf:"varint,3,opt,name=type,proto3,enum=Log_LogType" json:"type,omitempty"`
+	Data       []byte      `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	Extensions []byte      `protobuf:"bytes,5,opt,name=extensions,proto3" json:"extensions,omitempty"`
+}
+
+func (x *Log) Reset() {
+	*x = Log{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Log) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Log) ProtoMessage() {}
+
+func (x *Log) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Log.ProtoReflect.Descriptor instead.
+func (*Log) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Log) GetIndex() uint64 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *Log) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *Log) GetType() Log_LogType {
+	if x != nil {
+		return x.Type
+	}
+	return Log_LOG_COMMAND
+}
+
+func (x *Log) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
 	return nil
 }
 
+func (x *Log) GetExtensions() []byte {
+	if x != nil {
+		return x.Extensions
+	}
+	return nil
+}
+
+type AppendEntriesRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader         *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+	Term              uint64     `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Leader            []byte     `protobuf:"bytes,3,opt,name=leader,proto3" json:"leader,omitempty"`
+	PrevLogEntry      uint64     `protobuf:"varint,4,opt,name=prev_log_entry,json=prevLogEntry,proto3" json:"prev_log_entry,omitempty"`
+	PrevLogTerm       uint64     `protobuf:"varint,5,opt,name=prev_log_term,json=prevLogTerm,proto3" json:"prev_log_term,omitempty"`
+	Entries           []*Log     `protobuf:"bytes,6,rep,name=entries,proto3" json:"entries,omitempty"`
+	LeaderCommitIndex uint64     `protobuf:"varint,7,opt,name=leader_commit_index,json=leaderCommitIndex,proto3" json:"leader_commit_index,omitempty"`
+}
+
+func (x *AppendEntriesRequest) Reset() {
+	*x = AppendEntriesRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AppendEntriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppendEntriesRequest) ProtoMessage() {}
+
+func (x *AppendEntriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppendEntriesRequest.ProtoReflect.Descriptor instead.
+func (*AppendEntriesRequest) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AppendEntriesRequest) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+func (x *AppendEntriesRequest) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *AppendEntriesRequest) GetLeader() []byte {
+	if x != nil {
+		return x.Leader
+	}
+	return nil
+}
+
+func (x *AppendEntriesRequest) GetPrevLogEntry() uint64 {
+	if x != nil {
+		return x.PrevLogEntry
+	}
+	return 0
+}
+
+func (x *AppendEntriesRequest) GetPrevLogTerm() uint64 {
+	if x != nil {
+		return x.PrevLogTerm
+	}
+	return 0
+}
+
+func (x *AppendEntriesRequest) GetEntries() []*Log {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+func (x *AppendEntriesRequest) GetLeaderCommitIndex() uint64 {
+	if x != nil {
+		return x.LeaderCommitIndex
+	}
+	return 0
+}
+
+type AppendEntriesResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader      *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+	Term           uint64     `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	LastLog        uint64     `protobuf:"varint,3,opt,name=last_log,json=lastLog,proto3" json:"last_log,omitempty"`
+	Success        bool       `protobuf:"varint,4,opt,name=success,proto3" json:"success,omitempty"`
+	NoRetryBackoff bool       `protobuf:"varint,5,opt,name=no_retry_backoff,json=noRetryBackoff,proto3" json:"no_retry_backoff,omitempty"`
+}
+
+func (x *AppendEntriesResponse) Reset() {
+	*x = AppendEntriesResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AppendEntriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppendEntriesResponse) ProtoMessage() {}
+
+func (x *AppendEntriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppendEntriesResponse.ProtoReflect.Descriptor instead.
+func (*AppendEntriesResponse) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AppendEntriesResponse) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+func (x *AppendEntriesResponse) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *AppendEntriesResponse) GetLastLog() uint64 {
+	if x != nil {
+		return x.LastLog
+	}
+	return 0
+}
+
+func (x *AppendEntriesResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *AppendEntriesResponse) GetNoRetryBackoff() bool {
+	if x != nil {
+		return x.NoRetryBackoff
+	}
+	return false
+}
+
+type RequestVoteRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader          *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+	Term               uint64     `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Candidate          []byte     `protobuf:"bytes,3,opt,name=candidate,proto3" json:"candidate,omitempty"`
+	LastLogIndex       uint64     `protobuf:"varint,4,opt,name=last_log_index,json=lastLogIndex,proto3" json:"last_log_index,omitempty"`
+	LastLogTerm        uint64     `protobuf:"varint,5,opt,name=last_log_term,json=lastLogTerm,proto3" json:"last_log_term,omitempty"`
+	LeadershipTransfer bool       `protobuf:"varint,6,opt,name=leadership_transfer,json=leadershipTransfer,proto3" json:"leadership_transfer,omitempty"`
+}
+
+func (x *RequestVoteRequest) Reset() {
+	*x = RequestVoteRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RequestVoteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestVoteRequest) ProtoMessage() {}
+
+func (x *RequestVoteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestVoteRequest.ProtoReflect.Descriptor instead.
+func (*RequestVoteRequest) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RequestVoteRequest) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+func (x *RequestVoteRequest) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *RequestVoteRequest) GetCandidate() []byte {
+	if x != nil {
+		return x.Candidate
+	}
+	return nil
+}
+
+func (x *RequestVoteRequest) GetLastLogIndex() uint64 {
+	if x != nil {
+		return x.LastLogIndex
+	}
+	return 0
+}
+
+func (x *RequestVoteRequest) GetLastLogTerm() uint64 {
+	if x != nil {
+		return x.LastLogTerm
+	}
+	return 0
+}
+
+func (x *RequestVoteRequest) GetLeadershipTransfer() bool {
+	if x != nil {
+		return x.LeadershipTransfer
+	}
+	return false
+}
+
+type RequestVoteResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+	Term      uint64     `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Peers     []byte     `protobuf:"bytes,3,opt,name=peers,proto3" json:"peers,omitempty"`
+	Granted   bool       `protobuf:"varint,4,opt,name=granted,proto3" json:"granted,omitempty"`
+}
+
+func (x *RequestVoteResponse) Reset() {
+	*x = RequestVoteResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RequestVoteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestVoteResponse) ProtoMessage() {}
+
+func (x *RequestVoteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestVoteResponse.ProtoReflect.Descriptor instead.
+func (*RequestVoteResponse) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *RequestVoteResponse) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+func (x *RequestVoteResponse) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *RequestVoteResponse) GetPeers() []byte {
+	if x != nil {
+		return x.Peers
+	}
+	return nil
+}
+
+func (x *RequestVoteResponse) GetGranted() bool {
+	if x != nil {
+		return x.Granted
+	}
+	return false
+}
+
+type TimeoutNowRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+}
+
+func (x *TimeoutNowRequest) Reset() {
+	*x = TimeoutNowRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimeoutNowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeoutNowRequest) ProtoMessage() {}
+
+func (x *TimeoutNowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeoutNowRequest.ProtoReflect.Descriptor instead.
+func (*TimeoutNowRequest) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *TimeoutNowRequest) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+type TimeoutNowResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+}
+
+func (x *TimeoutNowResponse) Reset() {
+	*x = TimeoutNowResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimeoutNowResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeoutNowResponse) ProtoMessage() {}
+
+func (x *TimeoutNowResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeoutNowResponse.ProtoReflect.Descriptor instead.
+func (*TimeoutNowResponse) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *TimeoutNowResponse) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+// The first InstallSnapshotRequest on the stream contains all the metadata.
+// All further messages contain only data.
 type InstallSnapshotRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The first message will contain the request, and no data. All further requests contain only data.
-	Request *WrappedMessage `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	Data    []byte          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	RpcHeader          *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+	Term               uint64     `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Leader             []byte     `protobuf:"bytes,3,opt,name=leader,proto3" json:"leader,omitempty"`
+	LastLogIndex       uint64     `protobuf:"varint,4,opt,name=last_log_index,json=lastLogIndex,proto3" json:"last_log_index,omitempty"`
+	LastLogTerm        uint64     `protobuf:"varint,5,opt,name=last_log_term,json=lastLogTerm,proto3" json:"last_log_term,omitempty"`
+	Peers              []byte     `protobuf:"bytes,6,opt,name=peers,proto3" json:"peers,omitempty"`
+	Configuration      []byte     `protobuf:"bytes,7,opt,name=configuration,proto3" json:"configuration,omitempty"`
+	ConfigurationIndex uint64     `protobuf:"varint,8,opt,name=configuration_index,json=configurationIndex,proto3" json:"configuration_index,omitempty"`
+	Size               int64      `protobuf:"varint,9,opt,name=size,proto3" json:"size,omitempty"`
+	Data               []byte     `protobuf:"bytes,10,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (x *InstallSnapshotRequest) Reset() {
 	*x = InstallSnapshotRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_transport_proto_msgTypes[1]
+		mi := &file_transport_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -102,7 +674,7 @@ func (x *InstallSnapshotRequest) String() string {
 func (*InstallSnapshotRequest) ProtoMessage() {}
 
 func (x *InstallSnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_transport_proto_msgTypes[1]
+	mi := &file_transport_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,14 +687,70 @@ func (x *InstallSnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstallSnapshotRequest.ProtoReflect.Descriptor instead.
 func (*InstallSnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_transport_proto_rawDescGZIP(), []int{1}
+	return file_transport_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *InstallSnapshotRequest) GetRequest() *WrappedMessage {
+func (x *InstallSnapshotRequest) GetRpcHeader() *RPCHeader {
 	if x != nil {
-		return x.Request
+		return x.RpcHeader
 	}
 	return nil
+}
+
+func (x *InstallSnapshotRequest) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *InstallSnapshotRequest) GetLeader() []byte {
+	if x != nil {
+		return x.Leader
+	}
+	return nil
+}
+
+func (x *InstallSnapshotRequest) GetLastLogIndex() uint64 {
+	if x != nil {
+		return x.LastLogIndex
+	}
+	return 0
+}
+
+func (x *InstallSnapshotRequest) GetLastLogTerm() uint64 {
+	if x != nil {
+		return x.LastLogTerm
+	}
+	return 0
+}
+
+func (x *InstallSnapshotRequest) GetPeers() []byte {
+	if x != nil {
+		return x.Peers
+	}
+	return nil
+}
+
+func (x *InstallSnapshotRequest) GetConfiguration() []byte {
+	if x != nil {
+		return x.Configuration
+	}
+	return nil
+}
+
+func (x *InstallSnapshotRequest) GetConfigurationIndex() uint64 {
+	if x != nil {
+		return x.ConfigurationIndex
+	}
+	return 0
+}
+
+func (x *InstallSnapshotRequest) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
 }
 
 func (x *InstallSnapshotRequest) GetData() []byte {
@@ -132,41 +760,208 @@ func (x *InstallSnapshotRequest) GetData() []byte {
 	return nil
 }
 
+type InstallSnapshotResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	RpcHeader *RPCHeader `protobuf:"bytes,1,opt,name=rpc_header,json=rpcHeader,proto3" json:"rpc_header,omitempty"`
+	Term      uint64     `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Success   bool       `protobuf:"varint,3,opt,name=success,proto3" json:"success,omitempty"`
+}
+
+func (x *InstallSnapshotResponse) Reset() {
+	*x = InstallSnapshotResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_transport_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InstallSnapshotResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallSnapshotResponse) ProtoMessage() {}
+
+func (x *InstallSnapshotResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_transport_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallSnapshotResponse.ProtoReflect.Descriptor instead.
+func (*InstallSnapshotResponse) Descriptor() ([]byte, []int) {
+	return file_transport_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *InstallSnapshotResponse) GetRpcHeader() *RPCHeader {
+	if x != nil {
+		return x.RpcHeader
+	}
+	return nil
+}
+
+func (x *InstallSnapshotResponse) GetTerm() uint64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *InstallSnapshotResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_transport_proto protoreflect.FileDescriptor
 
 var file_transport_proto_rawDesc = []byte{
 	0x0a, 0x0f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x22, 0x24, 0x0a, 0x0e, 0x57, 0x72, 0x61, 0x70, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x57, 0x0a, 0x16, 0x49, 0x6e, 0x73, 0x74, 0x61,
-	0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x12, 0x29, 0x0a, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x52, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12, 0x0a, 0x04,
-	0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61,
-	0x32, 0xab, 0x02, 0x0a, 0x0d, 0x52, 0x61, 0x66, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f,
-	0x72, 0x74, 0x12, 0x3f, 0x0a, 0x15, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72,
-	0x69, 0x65, 0x73, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x12, 0x0f, 0x2e, 0x57, 0x72,
-	0x61, 0x70, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x1a, 0x0f, 0x2e, 0x57,
-	0x72, 0x61, 0x70, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x00, 0x28,
-	0x01, 0x30, 0x01, 0x12, 0x33, 0x0a, 0x0d, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74,
-	0x72, 0x69, 0x65, 0x73, 0x12, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70, 0x70, 0x65, 0x64, 0x4d, 0x65,
-	0x73, 0x73, 0x61, 0x67, 0x65, 0x1a, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70, 0x70, 0x65, 0x64, 0x4d,
-	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x00, 0x12, 0x31, 0x0a, 0x0b, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x56, 0x6f, 0x74, 0x65, 0x12, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70, 0x70, 0x65,
-	0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x1a, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70, 0x70,
-	0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x00, 0x12, 0x30, 0x0a, 0x0a, 0x54,
-	0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x4e, 0x6f, 0x77, 0x12, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70,
-	0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x1a, 0x0f, 0x2e, 0x57, 0x72, 0x61,
-	0x70, 0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x00, 0x12, 0x3f, 0x0a,
-	0x0f, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74,
-	0x12, 0x17, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68,
-	0x6f, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x0f, 0x2e, 0x57, 0x72, 0x61, 0x70,
-	0x70, 0x65, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x22, 0x00, 0x28, 0x01, 0x42, 0x2c,
-	0x5a, 0x2a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x4a, 0x69, 0x6c,
-	0x6c, 0x65, 0x2f, 0x72, 0x61, 0x66, 0x74, 0x2d, 0x67, 0x72, 0x70, 0x63, 0x2d, 0x74, 0x72, 0x61,
-	0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x22, 0x36, 0x0a, 0x09, 0x52, 0x50, 0x43, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x29,
+	0x0a, 0x10, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69,
+	0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63,
+	0x6f, 0x6c, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22, 0x95, 0x02, 0x0a, 0x03, 0x4c, 0x6f,
+	0x67, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
+	0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x20, 0x0a, 0x04, 0x74,
+	0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0c, 0x2e, 0x4c, 0x6f, 0x67, 0x2e,
+	0x4c, 0x6f, 0x67, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x12, 0x0a,
+	0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74,
+	0x61, 0x12, 0x1e, 0x0a, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x18,
+	0x05, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e,
+	0x73, 0x22, 0x8d, 0x01, 0x0a, 0x07, 0x4c, 0x6f, 0x67, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0f, 0x0a,
+	0x0b, 0x4c, 0x4f, 0x47, 0x5f, 0x43, 0x4f, 0x4d, 0x4d, 0x41, 0x4e, 0x44, 0x10, 0x00, 0x12, 0x0c,
+	0x0a, 0x08, 0x4c, 0x4f, 0x47, 0x5f, 0x4e, 0x4f, 0x4f, 0x50, 0x10, 0x01, 0x12, 0x1b, 0x0a, 0x17,
+	0x4c, 0x4f, 0x47, 0x5f, 0x41, 0x44, 0x44, 0x5f, 0x50, 0x45, 0x45, 0x52, 0x5f, 0x44, 0x45, 0x50,
+	0x52, 0x45, 0x43, 0x41, 0x54, 0x45, 0x44, 0x10, 0x02, 0x12, 0x1e, 0x0a, 0x1a, 0x4c, 0x4f, 0x47,
+	0x5f, 0x52, 0x45, 0x4d, 0x4f, 0x56, 0x45, 0x5f, 0x50, 0x45, 0x45, 0x52, 0x5f, 0x44, 0x45, 0x50,
+	0x52, 0x45, 0x43, 0x41, 0x54, 0x45, 0x44, 0x10, 0x03, 0x12, 0x0f, 0x0a, 0x0b, 0x4c, 0x4f, 0x47,
+	0x5f, 0x42, 0x41, 0x52, 0x52, 0x49, 0x45, 0x52, 0x10, 0x04, 0x12, 0x15, 0x0a, 0x11, 0x4c, 0x4f,
+	0x47, 0x5f, 0x43, 0x4f, 0x4e, 0x46, 0x49, 0x47, 0x55, 0x52, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x10,
+	0x05, 0x22, 0x87, 0x02, 0x0a, 0x14, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72,
+	0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x29, 0x0a, 0x0a, 0x72, 0x70,
+	0x63, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a,
+	0x2e, 0x52, 0x50, 0x43, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09, 0x72, 0x70, 0x63, 0x48,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x16, 0x0a, 0x06, 0x6c, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x6c, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x12, 0x24, 0x0a, 0x0e, 0x70, 0x72, 0x65, 0x76, 0x5f, 0x6c, 0x6f, 0x67, 0x5f, 0x65, 0x6e,
+	0x74, 0x72, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0c, 0x70, 0x72, 0x65, 0x76, 0x4c,
+	0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x22, 0x0a, 0x0d, 0x70, 0x72, 0x65, 0x76, 0x5f,
+	0x6c, 0x6f, 0x67, 0x5f, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b,
+	0x70, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x1e, 0x0a, 0x07, 0x65,
+	0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x04, 0x2e, 0x4c,
+	0x6f, 0x67, 0x52, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x12, 0x2e, 0x0a, 0x13, 0x6c,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x5f, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x5f, 0x69, 0x6e, 0x64,
+	0x65, 0x78, 0x18, 0x07, 0x20, 0x01, 0x28, 0x04, 0x52, 0x11, 0x6c, 0x65, 0x61, 0x64, 0x65, 0x72,
+	0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x22, 0xb5, 0x01, 0x0a, 0x15,
+	0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x29, 0x0a, 0x0a, 0x72, 0x70, 0x63, 0x5f, 0x68, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x50, 0x43, 0x48,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09, 0x72, 0x70, 0x63, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72,
+	0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x04,
+	0x74, 0x65, 0x72, 0x6d, 0x12, 0x19, 0x0a, 0x08, 0x6c, 0x61, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x67,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x07, 0x6c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x12,
+	0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08,
+	0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x28, 0x0a, 0x10, 0x6e, 0x6f, 0x5f,
+	0x72, 0x65, 0x74, 0x72, 0x79, 0x5f, 0x62, 0x61, 0x63, 0x6b, 0x6f, 0x66, 0x66, 0x18, 0x05, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x0e, 0x6e, 0x6f, 0x52, 0x65, 0x74, 0x72, 0x79, 0x42, 0x61, 0x63, 0x6b,
+	0x6f, 0x66, 0x66, 0x22, 0xec, 0x01, 0x0a, 0x12, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x56,
+	0x6f, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x29, 0x0a, 0x0a, 0x72, 0x70,
+	0x63, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a,
+	0x2e, 0x52, 0x50, 0x43, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09, 0x72, 0x70, 0x63, 0x48,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x1c, 0x0a, 0x09, 0x63, 0x61, 0x6e,
+	0x64, 0x69, 0x64, 0x61, 0x74, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x09, 0x63, 0x61,
+	0x6e, 0x64, 0x69, 0x64, 0x61, 0x74, 0x65, 0x12, 0x24, 0x0a, 0x0e, 0x6c, 0x61, 0x73, 0x74, 0x5f,
+	0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x0c, 0x6c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x22, 0x0a,
+	0x0d, 0x6c, 0x61, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x67, 0x5f, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x6c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72,
+	0x6d, 0x12, 0x2f, 0x0a, 0x13, 0x6c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x5f,
+	0x74, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x12,
+	0x6c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66,
+	0x65, 0x72, 0x22, 0x84, 0x01, 0x0a, 0x13, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x56, 0x6f,
+	0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x29, 0x0a, 0x0a, 0x72, 0x70,
+	0x63, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a,
+	0x2e, 0x52, 0x50, 0x43, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09, 0x72, 0x70, 0x63, 0x48,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x65, 0x65,
+	0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x12,
+	0x18, 0x0a, 0x07, 0x67, 0x72, 0x61, 0x6e, 0x74, 0x65, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08,
+	0x52, 0x07, 0x67, 0x72, 0x61, 0x6e, 0x74, 0x65, 0x64, 0x22, 0x3e, 0x0a, 0x11, 0x54, 0x69, 0x6d,
+	0x65, 0x6f, 0x75, 0x74, 0x4e, 0x6f, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x29,
+	0x0a, 0x0a, 0x72, 0x70, 0x63, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x50, 0x43, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09,
+	0x72, 0x70, 0x63, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x22, 0x3f, 0x0a, 0x12, 0x54, 0x69, 0x6d,
+	0x65, 0x6f, 0x75, 0x74, 0x4e, 0x6f, 0x77, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x29, 0x0a, 0x0a, 0x72, 0x70, 0x63, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x50, 0x43, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52,
+	0x09, 0x72, 0x70, 0x63, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x22, 0xce, 0x02, 0x0a, 0x16, 0x49,
+	0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x29, 0x0a, 0x0a, 0x72, 0x70, 0x63, 0x5f, 0x68, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x50, 0x43, 0x48,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09, 0x72, 0x70, 0x63, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72,
+	0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x04,
+	0x74, 0x65, 0x72, 0x6d, 0x12, 0x16, 0x0a, 0x06, 0x6c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x6c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x24, 0x0a, 0x0e,
+	0x6c, 0x61, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x0c, 0x6c, 0x61, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x49, 0x6e, 0x64,
+	0x65, 0x78, 0x12, 0x22, 0x0a, 0x0d, 0x6c, 0x61, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x67, 0x5f, 0x74,
+	0x65, 0x72, 0x6d, 0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x6c, 0x61, 0x73, 0x74, 0x4c,
+	0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d, 0x12, 0x14, 0x0a, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x18,
+	0x06, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x70, 0x65, 0x65, 0x72, 0x73, 0x12, 0x24, 0x0a, 0x0d,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x07, 0x20,
+	0x01, 0x28, 0x0c, 0x52, 0x0d, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x75, 0x72, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x2f, 0x0a, 0x13, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x75, 0x72, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x08, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x12, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x09, 0x20, 0x01, 0x28,
+	0x03, 0x52, 0x04, 0x73, 0x69, 0x7a, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18,
+	0x0a, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x72, 0x0a, 0x17, 0x49,
+	0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x29, 0x0a, 0x0a, 0x72, 0x70, 0x63, 0x5f, 0x68, 0x65,
+	0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x50, 0x43,
+	0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x52, 0x09, 0x72, 0x70, 0x63, 0x48, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x32,
+	0xde, 0x02, 0x0a, 0x0d, 0x52, 0x61, 0x66, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72,
+	0x74, 0x12, 0x4c, 0x0a, 0x15, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69,
+	0x65, 0x73, 0x50, 0x69, 0x70, 0x65, 0x6c, 0x69, 0x6e, 0x65, 0x12, 0x15, 0x2e, 0x41, 0x70, 0x70,
+	0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x16, 0x2e, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x12,
+	0x40, 0x0a, 0x0d, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73,
+	0x12, 0x15, 0x2e, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64,
+	0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x00, 0x12, 0x3a, 0x0a, 0x0b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x56, 0x6f, 0x74, 0x65,
+	0x12, 0x13, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x56,
+	0x6f, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x37, 0x0a,
+	0x0a, 0x54, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x4e, 0x6f, 0x77, 0x12, 0x12, 0x2e, 0x54, 0x69,
+	0x6d, 0x65, 0x6f, 0x75, 0x74, 0x4e, 0x6f, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x13, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x4e, 0x6f, 0x77, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x12, 0x48, 0x0a, 0x0f, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c,
+	0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x12, 0x17, 0x2e, 0x49, 0x6e, 0x73, 0x74,
+	0x61, 0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70, 0x73, 0x68, 0x6f, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x18, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6c, 0x6c, 0x53, 0x6e, 0x61, 0x70,
+	0x73, 0x68, 0x6f, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x28, 0x01,
+	0x42, 0x2c, 0x5a, 0x2a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x4a,
+	0x69, 0x6c, 0x6c, 0x65, 0x2f, 0x72, 0x61, 0x66, 0x74, 0x2d, 0x67, 0x72, 0x70, 0x63, 0x2d, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x70, 0x6f, 0x72, 0x74, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -181,28 +976,47 @@ func file_transport_proto_rawDescGZIP() []byte {
 	return file_transport_proto_rawDescData
 }
 
-var file_transport_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_transport_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_transport_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_transport_proto_goTypes = []interface{}{
-	(*WrappedMessage)(nil),         // 0: WrappedMessage
-	(*InstallSnapshotRequest)(nil), // 1: InstallSnapshotRequest
+	(Log_LogType)(0),                // 0: Log.LogType
+	(*RPCHeader)(nil),               // 1: RPCHeader
+	(*Log)(nil),                     // 2: Log
+	(*AppendEntriesRequest)(nil),    // 3: AppendEntriesRequest
+	(*AppendEntriesResponse)(nil),   // 4: AppendEntriesResponse
+	(*RequestVoteRequest)(nil),      // 5: RequestVoteRequest
+	(*RequestVoteResponse)(nil),     // 6: RequestVoteResponse
+	(*TimeoutNowRequest)(nil),       // 7: TimeoutNowRequest
+	(*TimeoutNowResponse)(nil),      // 8: TimeoutNowResponse
+	(*InstallSnapshotRequest)(nil),  // 9: InstallSnapshotRequest
+	(*InstallSnapshotResponse)(nil), // 10: InstallSnapshotResponse
 }
 var file_transport_proto_depIdxs = []int32{
-	0, // 0: InstallSnapshotRequest.request:type_name -> WrappedMessage
-	0, // 1: RaftTransport.AppendEntriesPipeline:input_type -> WrappedMessage
-	0, // 2: RaftTransport.AppendEntries:input_type -> WrappedMessage
-	0, // 3: RaftTransport.RequestVote:input_type -> WrappedMessage
-	0, // 4: RaftTransport.TimeoutNow:input_type -> WrappedMessage
-	1, // 5: RaftTransport.InstallSnapshot:input_type -> InstallSnapshotRequest
-	0, // 6: RaftTransport.AppendEntriesPipeline:output_type -> WrappedMessage
-	0, // 7: RaftTransport.AppendEntries:output_type -> WrappedMessage
-	0, // 8: RaftTransport.RequestVote:output_type -> WrappedMessage
-	0, // 9: RaftTransport.TimeoutNow:output_type -> WrappedMessage
-	0, // 10: RaftTransport.InstallSnapshot:output_type -> WrappedMessage
-	6, // [6:11] is the sub-list for method output_type
-	1, // [1:6] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0,  // 0: Log.type:type_name -> Log.LogType
+	1,  // 1: AppendEntriesRequest.rpc_header:type_name -> RPCHeader
+	2,  // 2: AppendEntriesRequest.entries:type_name -> Log
+	1,  // 3: AppendEntriesResponse.rpc_header:type_name -> RPCHeader
+	1,  // 4: RequestVoteRequest.rpc_header:type_name -> RPCHeader
+	1,  // 5: RequestVoteResponse.rpc_header:type_name -> RPCHeader
+	1,  // 6: TimeoutNowRequest.rpc_header:type_name -> RPCHeader
+	1,  // 7: TimeoutNowResponse.rpc_header:type_name -> RPCHeader
+	1,  // 8: InstallSnapshotRequest.rpc_header:type_name -> RPCHeader
+	1,  // 9: InstallSnapshotResponse.rpc_header:type_name -> RPCHeader
+	3,  // 10: RaftTransport.AppendEntriesPipeline:input_type -> AppendEntriesRequest
+	3,  // 11: RaftTransport.AppendEntries:input_type -> AppendEntriesRequest
+	5,  // 12: RaftTransport.RequestVote:input_type -> RequestVoteRequest
+	7,  // 13: RaftTransport.TimeoutNow:input_type -> TimeoutNowRequest
+	9,  // 14: RaftTransport.InstallSnapshot:input_type -> InstallSnapshotRequest
+	4,  // 15: RaftTransport.AppendEntriesPipeline:output_type -> AppendEntriesResponse
+	4,  // 16: RaftTransport.AppendEntries:output_type -> AppendEntriesResponse
+	6,  // 17: RaftTransport.RequestVote:output_type -> RequestVoteResponse
+	8,  // 18: RaftTransport.TimeoutNow:output_type -> TimeoutNowResponse
+	10, // 19: RaftTransport.InstallSnapshot:output_type -> InstallSnapshotResponse
+	15, // [15:20] is the sub-list for method output_type
+	10, // [10:15] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_transport_proto_init() }
@@ -212,7 +1026,7 @@ func file_transport_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_transport_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WrappedMessage); i {
+			switch v := v.(*RPCHeader); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -224,7 +1038,103 @@ func file_transport_proto_init() {
 			}
 		}
 		file_transport_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Log); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AppendEntriesRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AppendEntriesResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RequestVoteRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RequestVoteResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimeoutNowRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimeoutNowResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*InstallSnapshotRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_transport_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*InstallSnapshotResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -241,13 +1151,14 @@ func file_transport_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_transport_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_transport_proto_goTypes,
 		DependencyIndexes: file_transport_proto_depIdxs,
+		EnumInfos:         file_transport_proto_enumTypes,
 		MessageInfos:      file_transport_proto_msgTypes,
 	}.Build()
 	File_transport_proto = out.File
@@ -271,11 +1182,11 @@ type RaftTransportClient interface {
 	// AppendEntriesPipeline opens an AppendEntries message stream.
 	AppendEntriesPipeline(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_AppendEntriesPipelineClient, error)
 	// AppendEntries performs a single append entries request / response.
-	AppendEntries(ctx context.Context, in *WrappedMessage, opts ...grpc.CallOption) (*WrappedMessage, error)
+	AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error)
 	// RequestVote is the command used by a candidate to ask a Raft peer for a vote in an election.
-	RequestVote(ctx context.Context, in *WrappedMessage, opts ...grpc.CallOption) (*WrappedMessage, error)
+	RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error)
 	// TimeoutNow is used to start a leadership transfer to the target node.
-	TimeoutNow(ctx context.Context, in *WrappedMessage, opts ...grpc.CallOption) (*WrappedMessage, error)
+	TimeoutNow(ctx context.Context, in *TimeoutNowRequest, opts ...grpc.CallOption) (*TimeoutNowResponse, error)
 	// InstallSnapshot is the command sent to a Raft peer to bootstrap its log (and state machine) from a snapshot on another peer.
 	InstallSnapshot(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_InstallSnapshotClient, error)
 }
@@ -298,8 +1209,8 @@ func (c *raftTransportClient) AppendEntriesPipeline(ctx context.Context, opts ..
 }
 
 type RaftTransport_AppendEntriesPipelineClient interface {
-	Send(*WrappedMessage) error
-	Recv() (*WrappedMessage, error)
+	Send(*AppendEntriesRequest) error
+	Recv() (*AppendEntriesResponse, error)
 	grpc.ClientStream
 }
 
@@ -307,20 +1218,20 @@ type raftTransportAppendEntriesPipelineClient struct {
 	grpc.ClientStream
 }
 
-func (x *raftTransportAppendEntriesPipelineClient) Send(m *WrappedMessage) error {
+func (x *raftTransportAppendEntriesPipelineClient) Send(m *AppendEntriesRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *raftTransportAppendEntriesPipelineClient) Recv() (*WrappedMessage, error) {
-	m := new(WrappedMessage)
+func (x *raftTransportAppendEntriesPipelineClient) Recv() (*AppendEntriesResponse, error) {
+	m := new(AppendEntriesResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *raftTransportClient) AppendEntries(ctx context.Context, in *WrappedMessage, opts ...grpc.CallOption) (*WrappedMessage, error) {
-	out := new(WrappedMessage)
+func (c *raftTransportClient) AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error) {
+	out := new(AppendEntriesResponse)
 	err := c.cc.Invoke(ctx, "/RaftTransport/AppendEntries", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -328,8 +1239,8 @@ func (c *raftTransportClient) AppendEntries(ctx context.Context, in *WrappedMess
 	return out, nil
 }
 
-func (c *raftTransportClient) RequestVote(ctx context.Context, in *WrappedMessage, opts ...grpc.CallOption) (*WrappedMessage, error) {
-	out := new(WrappedMessage)
+func (c *raftTransportClient) RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error) {
+	out := new(RequestVoteResponse)
 	err := c.cc.Invoke(ctx, "/RaftTransport/RequestVote", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -337,8 +1248,8 @@ func (c *raftTransportClient) RequestVote(ctx context.Context, in *WrappedMessag
 	return out, nil
 }
 
-func (c *raftTransportClient) TimeoutNow(ctx context.Context, in *WrappedMessage, opts ...grpc.CallOption) (*WrappedMessage, error) {
-	out := new(WrappedMessage)
+func (c *raftTransportClient) TimeoutNow(ctx context.Context, in *TimeoutNowRequest, opts ...grpc.CallOption) (*TimeoutNowResponse, error) {
+	out := new(TimeoutNowResponse)
 	err := c.cc.Invoke(ctx, "/RaftTransport/TimeoutNow", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -357,7 +1268,7 @@ func (c *raftTransportClient) InstallSnapshot(ctx context.Context, opts ...grpc.
 
 type RaftTransport_InstallSnapshotClient interface {
 	Send(*InstallSnapshotRequest) error
-	CloseAndRecv() (*WrappedMessage, error)
+	CloseAndRecv() (*InstallSnapshotResponse, error)
 	grpc.ClientStream
 }
 
@@ -369,11 +1280,11 @@ func (x *raftTransportInstallSnapshotClient) Send(m *InstallSnapshotRequest) err
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *raftTransportInstallSnapshotClient) CloseAndRecv() (*WrappedMessage, error) {
+func (x *raftTransportInstallSnapshotClient) CloseAndRecv() (*InstallSnapshotResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(WrappedMessage)
+	m := new(InstallSnapshotResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -385,11 +1296,11 @@ type RaftTransportServer interface {
 	// AppendEntriesPipeline opens an AppendEntries message stream.
 	AppendEntriesPipeline(RaftTransport_AppendEntriesPipelineServer) error
 	// AppendEntries performs a single append entries request / response.
-	AppendEntries(context.Context, *WrappedMessage) (*WrappedMessage, error)
+	AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error)
 	// RequestVote is the command used by a candidate to ask a Raft peer for a vote in an election.
-	RequestVote(context.Context, *WrappedMessage) (*WrappedMessage, error)
+	RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error)
 	// TimeoutNow is used to start a leadership transfer to the target node.
-	TimeoutNow(context.Context, *WrappedMessage) (*WrappedMessage, error)
+	TimeoutNow(context.Context, *TimeoutNowRequest) (*TimeoutNowResponse, error)
 	// InstallSnapshot is the command sent to a Raft peer to bootstrap its log (and state machine) from a snapshot on another peer.
 	InstallSnapshot(RaftTransport_InstallSnapshotServer) error
 }
@@ -401,13 +1312,13 @@ type UnimplementedRaftTransportServer struct {
 func (*UnimplementedRaftTransportServer) AppendEntriesPipeline(RaftTransport_AppendEntriesPipelineServer) error {
 	return status.Errorf(codes.Unimplemented, "method AppendEntriesPipeline not implemented")
 }
-func (*UnimplementedRaftTransportServer) AppendEntries(context.Context, *WrappedMessage) (*WrappedMessage, error) {
+func (*UnimplementedRaftTransportServer) AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AppendEntries not implemented")
 }
-func (*UnimplementedRaftTransportServer) RequestVote(context.Context, *WrappedMessage) (*WrappedMessage, error) {
+func (*UnimplementedRaftTransportServer) RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestVote not implemented")
 }
-func (*UnimplementedRaftTransportServer) TimeoutNow(context.Context, *WrappedMessage) (*WrappedMessage, error) {
+func (*UnimplementedRaftTransportServer) TimeoutNow(context.Context, *TimeoutNowRequest) (*TimeoutNowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TimeoutNow not implemented")
 }
 func (*UnimplementedRaftTransportServer) InstallSnapshot(RaftTransport_InstallSnapshotServer) error {
@@ -423,8 +1334,8 @@ func _RaftTransport_AppendEntriesPipeline_Handler(srv interface{}, stream grpc.S
 }
 
 type RaftTransport_AppendEntriesPipelineServer interface {
-	Send(*WrappedMessage) error
-	Recv() (*WrappedMessage, error)
+	Send(*AppendEntriesResponse) error
+	Recv() (*AppendEntriesRequest, error)
 	grpc.ServerStream
 }
 
@@ -432,12 +1343,12 @@ type raftTransportAppendEntriesPipelineServer struct {
 	grpc.ServerStream
 }
 
-func (x *raftTransportAppendEntriesPipelineServer) Send(m *WrappedMessage) error {
+func (x *raftTransportAppendEntriesPipelineServer) Send(m *AppendEntriesResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *raftTransportAppendEntriesPipelineServer) Recv() (*WrappedMessage, error) {
-	m := new(WrappedMessage)
+func (x *raftTransportAppendEntriesPipelineServer) Recv() (*AppendEntriesRequest, error) {
+	m := new(AppendEntriesRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -445,7 +1356,7 @@ func (x *raftTransportAppendEntriesPipelineServer) Recv() (*WrappedMessage, erro
 }
 
 func _RaftTransport_AppendEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WrappedMessage)
+	in := new(AppendEntriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -457,13 +1368,13 @@ func _RaftTransport_AppendEntries_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/RaftTransport/AppendEntries",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RaftTransportServer).AppendEntries(ctx, req.(*WrappedMessage))
+		return srv.(RaftTransportServer).AppendEntries(ctx, req.(*AppendEntriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RaftTransport_RequestVote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WrappedMessage)
+	in := new(RequestVoteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -475,13 +1386,13 @@ func _RaftTransport_RequestVote_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/RaftTransport/RequestVote",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RaftTransportServer).RequestVote(ctx, req.(*WrappedMessage))
+		return srv.(RaftTransportServer).RequestVote(ctx, req.(*RequestVoteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RaftTransport_TimeoutNow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WrappedMessage)
+	in := new(TimeoutNowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -493,7 +1404,7 @@ func _RaftTransport_TimeoutNow_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/RaftTransport/TimeoutNow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RaftTransportServer).TimeoutNow(ctx, req.(*WrappedMessage))
+		return srv.(RaftTransportServer).TimeoutNow(ctx, req.(*TimeoutNowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -503,7 +1414,7 @@ func _RaftTransport_InstallSnapshot_Handler(srv interface{}, stream grpc.ServerS
 }
 
 type RaftTransport_InstallSnapshotServer interface {
-	SendAndClose(*WrappedMessage) error
+	SendAndClose(*InstallSnapshotResponse) error
 	Recv() (*InstallSnapshotRequest, error)
 	grpc.ServerStream
 }
@@ -512,7 +1423,7 @@ type raftTransportInstallSnapshotServer struct {
 	grpc.ServerStream
 }
 
-func (x *raftTransportInstallSnapshotServer) SendAndClose(m *WrappedMessage) error {
+func (x *raftTransportInstallSnapshotServer) SendAndClose(m *InstallSnapshotResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 

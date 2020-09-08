@@ -19,6 +19,7 @@ type raftAPI struct {
 
 type conn struct {
 	clientConn *grpc.ClientConn
+	client     pb.RaftTransportClient
 	mtx        sync.Mutex
 }
 
@@ -32,7 +33,7 @@ func (r raftAPI) LocalAddr() raft.ServerAddress {
 	return r.manager.localAddress
 }
 
-func (r raftAPI) getPeer(id raft.ServerID, target raft.ServerAddress) (*grpc.ClientConn, error) {
+func (r raftAPI) getPeer(id raft.ServerID, target raft.ServerAddress) (pb.RaftTransportClient, error) {
 	r.manager.connectionsMtx.Lock()
 	c, ok := r.manager.connections[id]
 	if !ok {
@@ -51,54 +52,57 @@ func (r raftAPI) getPeer(id raft.ServerID, target raft.ServerAddress) (*grpc.Cli
 			return nil, err
 		}
 		c.clientConn = conn
+		c.client = pb.NewRaftTransportClient(conn)
 	}
-	return c.clientConn, nil
-}
-
-func (r raftAPI) sendRPC(id raft.ServerID, target raft.ServerAddress, method string, req, resp interface{}) error {
-	c, err := r.getPeer(id, target)
-	if err != nil {
-		return err
-	}
-	b, err := encode(req)
-	if err != nil {
-		return err
-	}
-	in := pb.WrappedMessage{Data: b}
-	var out pb.WrappedMessage
-	if err := c.Invoke(context.TODO(), method, &in, &out); err != nil {
-		return err
-	}
-	if err := decode(out.GetData(), resp); err != nil {
-		return err
-	}
-	return nil
+	return c.client, nil
 }
 
 // AppendEntries sends the appropriate RPC to the target node.
 func (r raftAPI) AppendEntries(id raft.ServerID, target raft.ServerAddress, args *raft.AppendEntriesRequest, resp *raft.AppendEntriesResponse) error {
-	return r.sendRPC(id, target, "/RaftTransport/AppendEntries", args, resp)
+	c, err := r.getPeer(id, target)
+	if err != nil {
+		return err
+	}
+	ret, err := c.AppendEntries(context.TODO(), encodeAppendEntriesRequest(args))
+	if err != nil {
+		return err
+	}
+	*resp = *decodeAppendEntriesResponse(ret)
+	return nil
 }
 
 // RequestVote sends the appropriate RPC to the target node.
 func (r raftAPI) RequestVote(id raft.ServerID, target raft.ServerAddress, args *raft.RequestVoteRequest, resp *raft.RequestVoteResponse) error {
-	return r.sendRPC(id, target, "/RaftTransport/RequestVote", args, resp)
+	c, err := r.getPeer(id, target)
+	if err != nil {
+		return err
+	}
+	ret, err := c.RequestVote(context.TODO(), encodeRequestVoteRequest(args))
+	if err != nil {
+		return err
+	}
+	*resp = *decodeRequestVoteResponse(ret)
+	return nil
 }
 
 // TimeoutNow is used to start a leadership transfer to the target node.
 func (r raftAPI) TimeoutNow(id raft.ServerID, target raft.ServerAddress, args *raft.TimeoutNowRequest, resp *raft.TimeoutNowResponse) error {
-	return r.sendRPC(id, target, "/RaftTransport/TimeoutNow", args, resp)
+	c, err := r.getPeer(id, target)
+	if err != nil {
+		return err
+	}
+	ret, err := c.TimeoutNow(context.TODO(), encodeTimeoutNowRequest(args))
+	if err != nil {
+		return err
+	}
+	*resp = *decodeTimeoutNowResponse(ret)
+	return nil
 }
 
 // InstallSnapshot is used to push a snapshot down to a follower. The data is read from
 // the ReadCloser and streamed to the client.
 func (r raftAPI) InstallSnapshot(id raft.ServerID, target raft.ServerAddress, req *raft.InstallSnapshotRequest, resp *raft.InstallSnapshotResponse, data io.Reader) error {
-	conn, err := r.getPeer(id, target)
-	if err != nil {
-		return err
-	}
-	c := pb.NewRaftTransportClient(conn)
-	b, err := encode(req)
+	c, err := r.getPeer(id, target)
 	if err != nil {
 		return err
 	}
@@ -106,9 +110,7 @@ func (r raftAPI) InstallSnapshot(id raft.ServerID, target raft.ServerAddress, re
 	if err != nil {
 		return err
 	}
-	if err := stream.Send(&pb.InstallSnapshotRequest{
-		Request: &pb.WrappedMessage{Data: b},
-	}); err != nil {
+	if err := stream.Send(encodeInstallSnapshotRequest(req)); err != nil {
 		return err
 	}
 	var buf [16384]byte
@@ -130,20 +132,17 @@ func (r raftAPI) InstallSnapshot(id raft.ServerID, target raft.ServerAddress, re
 	if err != nil {
 		return err
 	}
-	if err := decode(ret.GetData(), resp); err != nil {
-		return err
-	}
+	*resp = *decodeInstallSnapshotResponse(ret)
 	return nil
 }
 
 // AppendEntriesPipeline returns an interface that can be used to pipeline
 // AppendEntries requests.
 func (r raftAPI) AppendEntriesPipeline(id raft.ServerID, target raft.ServerAddress) (raft.AppendPipeline, error) {
-	conn, err := r.getPeer(id, target)
+	c, err := r.getPeer(id, target)
 	if err != nil {
 		return nil, err
 	}
-	c := pb.NewRaftTransportClient(conn)
 	ctx := context.TODO()
 	ctx, cancel := context.WithCancel(ctx)
 	stream, err := c.AppendEntriesPipeline(ctx)
@@ -176,11 +175,7 @@ func (r raftPipelineAPI) AppendEntries(req *raft.AppendEntriesRequest, resp *raf
 		request: req,
 		done:    make(chan struct{}),
 	}
-	b, err := encode(req)
-	if err != nil {
-		return nil, err
-	}
-	if err := r.stream.Send(&pb.WrappedMessage{Data: b}); err != nil {
+	if err := r.stream.Send(encodeAppendEntriesRequest(req)); err != nil {
 		return nil, err
 	}
 	r.inflightChMtx.Lock()
@@ -213,8 +208,8 @@ func (r raftPipelineAPI) receiver() {
 		msg, err := r.stream.Recv()
 		if err != nil {
 			af.err = err
-		} else if err := decode(msg.GetData(), &af.response); err != nil {
-			af.err = err
+		} else {
+			af.response = *decodeAppendEntriesResponse(msg)
 		}
 		close(af.done)
 		r.doneCh <- af
