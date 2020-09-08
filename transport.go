@@ -13,7 +13,9 @@ type Manager struct {
 	localAddress raft.ServerAddress
 	dialOptions  []grpc.DialOption
 
-	rpcChan chan raft.RPC
+	rpcChan          chan raft.RPC
+	heartbeatFunc    func(raft.RPC)
+	heartbeatFuncMtx sync.Mutex
 
 	connectionsMtx sync.Mutex
 	connections    map[raft.ServerID]*conn

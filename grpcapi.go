@@ -21,7 +21,18 @@ func (g gRPCAPI) handleRPC(command interface{}, data io.Reader) (interface{}, er
 		RespChan: ch,
 		Reader:   data,
 	}
+	if isHeartbeat(command) {
+		// We can take the fast path and use the heartbeat callback and skip the queue in g.manager.rpcChan.
+		g.manager.heartbeatFuncMtx.Lock()
+		fn := g.manager.heartbeatFunc
+		g.manager.heartbeatFuncMtx.Unlock()
+		if fn != nil {
+			fn(rpc)
+			goto wait
+		}
+	}
 	g.manager.rpcChan <- rpc
+wait:
 	resp := <-ch
 	if resp.Error != nil {
 		return nil, resp.Error
@@ -104,4 +115,12 @@ func (g gRPCAPI) AppendEntriesPipeline(s pb.RaftTransport_AppendEntriesPipelineS
 			return err
 		}
 	}
+}
+
+func isHeartbeat(command interface{}) bool {
+	req, ok := command.(*raft.AppendEntriesRequest)
+	if !ok {
+		return false
+	}
+	return req.Term != 0 && len(req.Leader) != 0 && req.PrevLogEntry == 0 && req.PrevLogTerm == 0 && len(req.Entries) == 0 && req.LeaderCommitIndex == 0
 }

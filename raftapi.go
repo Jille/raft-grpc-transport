@@ -271,5 +271,7 @@ func (r raftAPI) DecodePeer(p []byte) raft.ServerAddress {
 // disk IO. If a Transport does not support this, it can simply
 // ignore the call, and push the heartbeat onto the Consumer channel.
 func (r raftAPI) SetHeartbeatHandler(cb func(rpc raft.RPC)) {
-	// TODO(quis): Implement
+	r.manager.heartbeatFuncMtx.Lock()
+	r.manager.heartbeatFunc = cb
+	r.manager.heartbeatFuncMtx.Unlock()
 }
