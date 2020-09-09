@@ -82,6 +82,7 @@ message TimeoutNowResponse {
 // All further messages contain only data.
 message InstallSnapshotRequest {
 	RPCHeader rpc_header = 1;
+	int64 snapshot_version = 11;
 	uint64 term = 2;
 	bytes leader = 3;
 	uint64 last_log_index = 4;

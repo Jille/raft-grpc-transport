@@ -93,6 +93,7 @@ func decodeRequestVoteResponse(m *pb.RequestVoteResponse) *raft.RequestVoteRespo
 func decodeInstallSnapshotRequest(m *pb.InstallSnapshotRequest) *raft.InstallSnapshotRequest {
 	return &raft.InstallSnapshotRequest{
 		RPCHeader:          decodeRPCHeader(m.RpcHeader),
+		SnapshotVersion:    raft.SnapshotVersion(m.SnapshotVersion),
 		Term:               m.Term,
 		Leader:             m.Leader,
 		LastLogIndex:       m.LastLogIndex,

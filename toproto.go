@@ -93,6 +93,7 @@ func encodeRequestVoteResponse(s *raft.RequestVoteResponse) *pb.RequestVoteRespo
 func encodeInstallSnapshotRequest(s *raft.InstallSnapshotRequest) *pb.InstallSnapshotRequest {
 	return &pb.InstallSnapshotRequest{
 		RpcHeader:          encodeRPCHeader(s.RPCHeader),
+		SnapshotVersion:    int64(s.SnapshotVersion),
 		Term:               s.Term,
 		Leader:             s.Leader,
 		LastLogIndex:       s.LastLogIndex,
