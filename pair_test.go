@@ -1,77 +1,56 @@
-package raftgrpc
+package transport_test
 
 import (
 	"bytes"
-	context "context"
+	"context"
 	"io"
 	"log"
 	"net"
 	"reflect"
 	"testing"
 
+	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
 
-// TestRaftGRPCTransportImplementsRaftTransport checks if the transport implements the raft interface correctly
-func TestRaftGRPCTransportImplementsRaftTransport(t *testing.T) {
-	var typeAssertion raft.Transport = &RaftGRPCTransport{}
-	_ = typeAssertion
-}
-
-// TestRaftGRPCTransportImplementsService checks if the transport implements the server interface correctly
-func TestRaftGRPCTransportImplementsService(t *testing.T) {
-	var typeAssertion RaftServiceServer = (&RaftGRPCTransport{}).GetServerService()
-	_ = typeAssertion
-}
-
-func makeTestPair(ctx context.Context, t *testing.T) (*RaftGRPCTransport, *RaftGRPCTransport) {
+func makeTestPair(ctx context.Context, t *testing.T) (raft.Transport, raft.Transport) {
 	t.Helper()
-	t1 := NewTransport(ctx, "t1")
-	t2 := NewTransport(ctx, "t2")
-
 	t1Listen := bufconn.Listen(1024)
+	t2Listen := bufconn.Listen(1024)
+
+	t1 := transport.New(raft.ServerAddress("t1"), []grpc.DialOption{grpc.WithInsecure(), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+		return t2Listen.Dial()
+	})})
+	t2 := transport.New(raft.ServerAddress("t2"), []grpc.DialOption{grpc.WithInsecure(), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+		return t1Listen.Dial()
+	})})
+
 	s1 := grpc.NewServer()
-	RegisterRaftServiceServer(s1, t1.GetServerService())
+	t1.Register(s1)
 	go func() {
 		if err := s1.Serve(t1Listen); err != nil {
 			log.Fatalf("t1 exited with error: %v", err)
 		}
 	}()
 
-	t2Listen := bufconn.Listen(1024)
 	s2 := grpc.NewServer()
-	RegisterRaftServiceServer(s2, t2.GetServerService())
+	t2.Register(s2)
 	go func() {
 		if err := s2.Serve(t2Listen); err != nil {
 			log.Fatalf("t2 exited with error: %v", err)
 		}
 	}()
 
-	conn1, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-		return t1Listen.Dial()
-	}), grpc.WithInsecure())
-	if err != nil {
-		t.Fatalf("Failed to dial bufnet: %v", err)
-	}
-	t2.AddPeer("t1", NewRaftServiceClient(conn1))
-
-	conn2, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-		return t2Listen.Dial()
-	}), grpc.WithInsecure())
-	if err != nil {
-		t.Fatalf("Failed to dial bufnet: %v", err)
-	}
-	t1.AddPeer("t2", NewRaftServiceClient(conn2))
-
 	go func() {
 		<-ctx.Done()
-		conn1.Close()
-		conn2.Close()
+		// TODO(quis): Add a Close() method to the Manager.
+		// t1.Close()
+		// t2.Close()
 	}()
 
-	return t1, t2
+	return t1.Transport(), t2.Transport()
 }
 
 func TestAppendEntries(t *testing.T) {
