@@ -11,6 +11,7 @@ import (
 
 	transport "github.com/Jille/raft-grpc-transport"
 	"github.com/hashicorp/raft"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -45,15 +46,23 @@ func makeTestPair(ctx context.Context, t *testing.T) (raft.Transport, raft.Trans
 
 	go func() {
 		<-ctx.Done()
-		// TODO(quis): Add a Close() method to the Manager.
-		// t1.Close()
-		// t2.Close()
+		if t1Err := t1.Close(); t1Err != nil {
+			t.Fatalf("received error on t1 close: %s", t1Err)
+		}
+		if t2Err := t2.Close(); t2Err != nil {
+			t.Fatalf("received error on t1 close: %s", t2Err)
+		}
+
+		s1.GracefulStop()
+		s2.GracefulStop()
 	}()
 
 	return t1.Transport(), t2.Transport()
 }
 
 func TestAppendEntries(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	t1, t2 := makeTestPair(ctx, t)
@@ -98,6 +107,8 @@ func TestAppendEntries(t *testing.T) {
 }
 
 func TestSnapshot(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	t1, t2 := makeTestPair(ctx, t)

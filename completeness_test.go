@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	fuzz "github.com/google/gofuzz"
 	"github.com/hashicorp/raft"
+	"go.uber.org/goleak"
 )
 
 func fuzzLogType(lt *raft.LogType, c fuzz.Continue) {
@@ -25,6 +26,8 @@ func verify(t *testing.T, rm1, rm2 interface{}) {
 }
 
 func TestAppendEntriesRequest(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.AppendEntriesRequest{}
 		doFuzz(&rm, i)
@@ -35,6 +38,8 @@ func TestAppendEntriesRequest(t *testing.T) {
 }
 
 func TestAppendEntriesResponse(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.AppendEntriesResponse{}
 		doFuzz(&rm, i)
@@ -55,6 +60,8 @@ func TestRequestVoteRequest(t *testing.T) {
 }
 
 func TestRequestVoteResponse(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.RequestVoteResponse{}
 		doFuzz(&rm, i)
@@ -65,6 +72,8 @@ func TestRequestVoteResponse(t *testing.T) {
 }
 
 func TestInstallSnapshotRequest(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.InstallSnapshotRequest{}
 		doFuzz(&rm, i)
@@ -75,6 +84,8 @@ func TestInstallSnapshotRequest(t *testing.T) {
 }
 
 func TestInstallSnapshotResponse(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.InstallSnapshotResponse{}
 		doFuzz(&rm, i)
@@ -85,6 +96,8 @@ func TestInstallSnapshotResponse(t *testing.T) {
 }
 
 func TestTimeoutNowRequest(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.TimeoutNowRequest{}
 		doFuzz(&rm, i)
@@ -95,6 +108,8 @@ func TestTimeoutNowRequest(t *testing.T) {
 }
 
 func TestTimeoutNowResponse(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	for i := 0; 1000 > i; i++ {
 		rm := raft.TimeoutNowResponse{}
 		doFuzz(&rm, i)

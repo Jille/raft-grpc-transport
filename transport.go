@@ -6,7 +6,12 @@ import (
 
 	pb "github.com/Jille/raft-grpc-transport/proto"
 	"github.com/hashicorp/raft"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+)
+
+var (
+	errCloseErr = errors.New("error closing connections")
 )
 
 type Manager struct {
@@ -40,4 +45,23 @@ func (m *Manager) Register(s *grpc.Server) {
 // Transport returns a raft.Transport that communicates over gRPC.
 func (m *Manager) Transport() raft.Transport {
 	return raftAPI{m}
+}
+
+func (m *Manager) Close() error {
+	m.connectionsMtx.Lock()
+	defer m.connectionsMtx.Unlock()
+
+	err := errCloseErr
+	for _, conn := range m.connections {
+		closeErr := conn.clientConn.Close()
+		if closeErr != nil {
+			errors.Wrap(err, closeErr.Error())
+		}
+	}
+
+	if err != errCloseErr {
+		return err
+	}
+
+	return nil
 }
