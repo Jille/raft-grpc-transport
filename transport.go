@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	pb "github.com/Jille/raft-grpc-transport/proto"
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/raft"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -53,9 +54,12 @@ func (m *Manager) Close() error {
 
 	err := errCloseErr
 	for _, conn := range m.connections {
+		// Lock conn.mtx to ensure Dial() is complete
+		conn.mtx.Lock()
+		conn.mtx.Unlock()
 		closeErr := conn.clientConn.Close()
 		if closeErr != nil {
-			errors.Wrap(err, closeErr.Error())
+			multierror.Append(err, closeErr)
 		}
 	}
 

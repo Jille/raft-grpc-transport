@@ -16,10 +16,11 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
-func makeTestPair(ctx context.Context, t *testing.T) (raft.Transport, raft.Transport) {
+func makeTestPair(ctx context.Context, t *testing.T) (raft.Transport, raft.Transport, chan struct{}) {
 	t.Helper()
 	t1Listen := bufconn.Listen(1024)
 	t2Listen := bufconn.Listen(1024)
+	shutdownSig := make(chan struct{})
 
 	t1 := transport.New(raft.ServerAddress("t1"), []grpc.DialOption{grpc.WithInsecure(), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return t2Listen.Dial()
@@ -55,17 +56,22 @@ func makeTestPair(ctx context.Context, t *testing.T) (raft.Transport, raft.Trans
 
 		s1.GracefulStop()
 		s2.GracefulStop()
+
+		close(shutdownSig)
 	}()
 
-	return t1.Transport(), t2.Transport()
+	return t1.Transport(), t2.Transport(), shutdownSig
 }
 
 func TestAppendEntries(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	t1, t2 := makeTestPair(ctx, t)
+	t1, t2, shutdownSig := makeTestPair(ctx, t)
+	defer func() {
+		cancel()
+		<-shutdownSig
+	}()
 
 	stop := make(chan struct{})
 	go func() {
@@ -110,8 +116,11 @@ func TestSnapshot(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	t1, t2 := makeTestPair(ctx, t)
+	t1, t2, shutdownSig := makeTestPair(ctx, t)
+	defer func() {
+		cancel()
+		<-shutdownSig
+	}()
 
 	stop := make(chan struct{})
 	go func() {
