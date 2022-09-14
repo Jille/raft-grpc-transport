@@ -59,7 +59,7 @@ func (m *Manager) Close() error {
 		conn.mtx.Unlock()
 		closeErr := conn.clientConn.Close()
 		if closeErr != nil {
-			multierror.Append(err, closeErr)
+			err = multierror.Append(err, closeErr)
 		}
 	}
 
