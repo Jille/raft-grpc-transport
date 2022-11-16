@@ -20,6 +20,8 @@ func decodeAppendEntriesRequest(m *pb.AppendEntriesRequest) *raft.AppendEntriesR
 func decodeRPCHeader(m *pb.RPCHeader) raft.RPCHeader {
 	return raft.RPCHeader{
 		ProtocolVersion: raft.ProtocolVersion(m.ProtocolVersion),
+		ID:              m.Id,
+		Addr:            m.Addr,
 	}
 }
 

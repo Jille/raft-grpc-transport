@@ -19,6 +19,8 @@ service RaftTransport {
 
 message RPCHeader {
 	int64 protocol_version = 1;
+	bytes id = 2;
+	bytes addr = 3;
 }
 
 message Log {

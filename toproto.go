@@ -21,6 +21,8 @@ func encodeAppendEntriesRequest(s *raft.AppendEntriesRequest) *pb.AppendEntriesR
 func encodeRPCHeader(s raft.RPCHeader) *pb.RPCHeader {
 	return &pb.RPCHeader{
 		ProtocolVersion: int64(s.ProtocolVersion),
+		Id:              s.ID,
+		Addr:            s.Addr,
 	}
 }
 
