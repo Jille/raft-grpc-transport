@@ -63,7 +63,13 @@ func (r raftAPI) AppendEntries(id raft.ServerID, target raft.ServerAddress, args
 	if err != nil {
 		return err
 	}
-	ret, err := c.AppendEntries(context.TODO(), encodeAppendEntriesRequest(args))
+	ctx := context.TODO()
+	if r.manager.heartbeatTimeout > 0 && isHeartbeat(args) {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, r.manager.heartbeatTimeout)
+		defer cancel()
+	}
+	ret, err := c.AppendEntries(ctx, encodeAppendEntriesRequest(args))
 	if err != nil {
 		return err
 	}

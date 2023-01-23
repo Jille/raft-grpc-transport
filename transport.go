@@ -3,6 +3,7 @@ package transport
 
 import (
 	"sync"
+	"time"
 
 	pb "github.com/Jille/raft-grpc-transport/proto"
 	"github.com/hashicorp/go-multierror"
@@ -22,20 +23,25 @@ type Manager struct {
 	rpcChan          chan raft.RPC
 	heartbeatFunc    func(raft.RPC)
 	heartbeatFuncMtx sync.Mutex
+	heartbeatTimeout time.Duration
 
 	connectionsMtx sync.Mutex
 	connections    map[raft.ServerID]*conn
 }
 
 // New creates both components of raft-grpc-transport: a gRPC service and a Raft Transport.
-func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption) *Manager {
-	return &Manager{
+func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption, options ...Option) *Manager {
+	m := &Manager{
 		localAddress: localAddress,
 		dialOptions:  dialOptions,
 
 		rpcChan:     make(chan raft.RPC),
 		connections: map[raft.ServerID]*conn{},
 	}
+	for _, opt := range options {
+		opt(m)
+	}
+	return m
 }
 
 // Register the RaftTransport gRPC service on a gRPC server.
