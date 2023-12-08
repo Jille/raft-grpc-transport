@@ -27,6 +27,10 @@ type Manager struct {
 
 	connectionsMtx sync.Mutex
 	connections    map[raft.ServerID]*conn
+
+	shutdown     bool
+	shutdownCh   chan struct{}
+	shutdownLock sync.Mutex
 }
 
 // New creates both components of raft-grpc-transport: a gRPC service and a Raft Transport.
@@ -37,6 +41,8 @@ func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption, options
 
 		rpcChan:     make(chan raft.RPC),
 		connections: map[raft.ServerID]*conn{},
+
+		shutdownCh: make(chan struct{}),
 	}
 	for _, opt := range options {
 		opt(m)
@@ -55,22 +61,30 @@ func (m *Manager) Transport() raft.Transport {
 }
 
 func (m *Manager) Close() error {
-	m.connectionsMtx.Lock()
-	defer m.connectionsMtx.Unlock()
+	m.shutdownLock.Lock()
+	defer m.shutdownLock.Unlock()
 
-	err := errCloseErr
-	for _, conn := range m.connections {
-		// Lock conn.mtx to ensure Dial() is complete
-		conn.mtx.Lock()
-		conn.mtx.Unlock()
-		closeErr := conn.clientConn.Close()
-		if closeErr != nil {
-			err = multierror.Append(err, closeErr)
+	if !m.shutdown {
+		close(m.shutdownCh)
+		m.shutdown = true
+
+		m.connectionsMtx.Lock()
+		defer m.connectionsMtx.Unlock()
+
+		err := errCloseErr
+		for _, conn := range m.connections {
+			// Lock conn.mtx to ensure Dial() is complete
+			conn.mtx.Lock()
+			conn.mtx.Unlock()
+			closeErr := conn.clientConn.Close()
+			if closeErr != nil {
+				err = multierror.Append(err, closeErr)
+			}
 		}
-	}
 
-	if err != errCloseErr {
-		return err
+		if err != errCloseErr {
+			return err
+		}
 	}
 
 	return nil

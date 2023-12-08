@@ -34,13 +34,22 @@ func (g gRPCAPI) handleRPC(command interface{}, data io.Reader) (interface{}, er
 			goto wait
 		}
 	}
-	g.manager.rpcChan <- rpc
-wait:
-	resp := <-ch
-	if resp.Error != nil {
-		return nil, resp.Error
+	select {
+	case g.manager.rpcChan <- rpc:
+	case <-g.manager.shutdownCh:
+		return nil, raft.ErrTransportShutdown
 	}
-	return resp.Response, nil
+
+wait:
+	select {
+	case resp := <-ch:
+		if resp.Error != nil {
+			return nil, resp.Error
+		}
+		return resp.Response, nil
+	case <-g.manager.shutdownCh:
+		return nil, raft.ErrTransportShutdown
+	}
 }
 
 func (g gRPCAPI) AppendEntries(ctx context.Context, req *pb.AppendEntriesRequest) (*pb.AppendEntriesResponse, error) {
