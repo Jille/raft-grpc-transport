@@ -46,6 +46,15 @@ func (r raftAPI) getPeer(id raft.ServerID, target raft.ServerAddress) (pb.RaftTr
 		c.mtx.Lock()
 	}
 	defer c.mtx.Unlock()
+
+	if c.clientConn != nil && c.clientConn.Target() != string(target) {
+		err := c.clientConn.Close()
+		if err != nil {
+			return nil, err
+		}
+		c.clientConn = nil
+	}
+
 	if c.clientConn == nil {
 		conn, err := grpc.Dial(string(target), r.manager.dialOptions...)
 		if err != nil {
