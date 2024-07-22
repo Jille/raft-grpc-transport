@@ -26,7 +26,7 @@ type Manager struct {
 	heartbeatTimeout time.Duration
 
 	connectionsMtx sync.Mutex
-	connections    map[raft.ServerID]*conn
+	connections    map[raft.ServerAddress]*conn
 }
 
 // New creates both components of raft-grpc-transport: a gRPC service and a Raft Transport.
@@ -36,7 +36,7 @@ func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption, options
 		dialOptions:  dialOptions,
 
 		rpcChan:     make(chan raft.RPC),
-		connections: map[raft.ServerID]*conn{},
+		connections: map[raft.ServerAddress]*conn{},
 	}
 	for _, opt := range options {
 		opt(m)
@@ -59,7 +59,7 @@ func (m *Manager) Close() error {
 	defer m.connectionsMtx.Unlock()
 
 	err := errCloseErr
-	for _, conn := range m.connections {
+	for k, conn := range m.connections {
 		// Lock conn.mtx to ensure Dial() is complete
 		conn.mtx.Lock()
 		conn.mtx.Unlock()
@@ -67,6 +67,7 @@ func (m *Manager) Close() error {
 		if closeErr != nil {
 			err = multierror.Append(err, closeErr)
 		}
+		delete(m.connections, k)
 	}
 
 	if err != errCloseErr {
