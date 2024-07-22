@@ -26,7 +26,7 @@ type Manager struct {
 	heartbeatTimeout time.Duration
 
 	connectionsMtx sync.Mutex
-	connections    map[raft.ServerID]*conn
+	connections    map[raft.ServerAddress]*conn
 
 	shutdown     bool
 	shutdownCh   chan struct{}
@@ -40,7 +40,7 @@ func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption, options
 		dialOptions:  dialOptions,
 
 		rpcChan:     make(chan raft.RPC),
-		connections: map[raft.ServerID]*conn{},
+		connections: map[raft.ServerAddress]*conn{},
 
 		shutdownCh: make(chan struct{}),
 	}
@@ -75,7 +75,7 @@ func (m *Manager) Close() error {
 	defer m.connectionsMtx.Unlock()
 
 	err := errCloseErr
-	for _, conn := range m.connections {
+	for k, conn := range m.connections {
 		// Lock conn.mtx to ensure Dial() is complete
 		conn.mtx.Lock()
 		conn.mtx.Unlock()
@@ -83,6 +83,7 @@ func (m *Manager) Close() error {
 		if closeErr != nil {
 			err = multierror.Append(err, closeErr)
 		}
+		delete(m.connections, k)
 	}
 
 	if err != errCloseErr {

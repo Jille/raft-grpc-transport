@@ -128,3 +128,20 @@ func encodeTimeoutNowResponse(s *raft.TimeoutNowResponse) *pb.TimeoutNowResponse
 		RpcHeader: encodeRPCHeader(s.RPCHeader),
 	}
 }
+
+func encodeRequestPreVoteRequest(s *raft.RequestPreVoteRequest) *pb.RequestPreVoteRequest {
+	return &pb.RequestPreVoteRequest{
+		RpcHeader:    encodeRPCHeader(s.RPCHeader),
+		Term:         s.Term,
+		LastLogIndex: s.LastLogIndex,
+		LastLogTerm:  s.LastLogTerm,
+	}
+}
+
+func encodeRequestPreVoteResponse(s *raft.RequestPreVoteResponse) *pb.RequestPreVoteResponse {
+	return &pb.RequestPreVoteResponse{
+		RpcHeader: encodeRPCHeader(s.RPCHeader),
+		Term:      s.Term,
+		Granted:   s.Granted,
+	}
+}
