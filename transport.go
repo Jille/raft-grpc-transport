@@ -64,27 +64,29 @@ func (m *Manager) Close() error {
 	m.shutdownLock.Lock()
 	defer m.shutdownLock.Unlock()
 
-	if !m.shutdown {
-		close(m.shutdownCh)
-		m.shutdown = true
+	if m.shutdown {
+		return nil
+	}
 
-		m.connectionsMtx.Lock()
-		defer m.connectionsMtx.Unlock()
+	close(m.shutdownCh)
+	m.shutdown = true
 
-		err := errCloseErr
-		for _, conn := range m.connections {
-			// Lock conn.mtx to ensure Dial() is complete
-			conn.mtx.Lock()
-			conn.mtx.Unlock()
-			closeErr := conn.clientConn.Close()
-			if closeErr != nil {
-				err = multierror.Append(err, closeErr)
-			}
+	m.connectionsMtx.Lock()
+	defer m.connectionsMtx.Unlock()
+
+	err := errCloseErr
+	for _, conn := range m.connections {
+		// Lock conn.mtx to ensure Dial() is complete
+		conn.mtx.Lock()
+		conn.mtx.Unlock()
+		closeErr := conn.clientConn.Close()
+		if closeErr != nil {
+			err = multierror.Append(err, closeErr)
 		}
+	}
 
-		if err != errCloseErr {
-			return err
-		}
+	if err != errCloseErr {
+		return err
 	}
 
 	return nil
