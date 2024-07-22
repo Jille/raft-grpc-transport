@@ -325,5 +325,5 @@ func (r raftAPI) Disconnect(target raft.ServerAddress) {
 }
 
 func (r raftAPI) DisconnectAll() {
-	_ = r.manager.Close()
+	_ = r.manager.disconnectAll()
 }

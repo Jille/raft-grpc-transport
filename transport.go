@@ -70,7 +70,10 @@ func (m *Manager) Close() error {
 
 	close(m.shutdownCh)
 	m.shutdown = true
+	return m.disconnectAll()
+}
 
+func (m *Manager) disconnectAll() error {
 	m.connectionsMtx.Lock()
 	defer m.connectionsMtx.Unlock()
 
