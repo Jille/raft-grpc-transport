@@ -118,3 +118,27 @@ func TestTimeoutNowResponse(t *testing.T) {
 		verify(t, &rm, rm2)
 	}
 }
+
+func TestRequestPreVoteRequest(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	for i := 0; 1000 > i; i++ {
+		rm := raft.RequestPreVoteRequest{}
+		doFuzz(&rm, i)
+		pm := encodeRequestPreVoteRequest(&rm)
+		rm2 := decodeRequestPreVoteRequest(pm)
+		verify(t, &rm, rm2)
+	}
+}
+
+func TestRequestPreVoteResponse(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	for i := 0; 1000 > i; i++ {
+		rm := raft.RequestPreVoteResponse{}
+		doFuzz(&rm, i)
+		pm := encodeRequestPreVoteResponse(&rm)
+		rm2 := decodeRequestPreVoteResponse(pm)
+		verify(t, &rm, rm2)
+	}
+}

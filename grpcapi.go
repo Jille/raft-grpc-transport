@@ -67,6 +67,14 @@ func (g gRPCAPI) TimeoutNow(ctx context.Context, req *pb.TimeoutNowRequest) (*pb
 	return encodeTimeoutNowResponse(resp.(*raft.TimeoutNowResponse)), nil
 }
 
+func (g gRPCAPI) RequestPreVote(ctx context.Context, req *pb.RequestPreVoteRequest) (*pb.RequestPreVoteResponse, error) {
+	resp, err := g.handleRPC(decodeRequestPreVoteRequest(req), nil)
+	if err != nil {
+		return nil, err
+	}
+	return encodeRequestPreVoteResponse(resp.(*raft.RequestPreVoteResponse)), nil
+}
+
 func (g gRPCAPI) InstallSnapshot(s pb.RaftTransport_InstallSnapshotServer) error {
 	isr, err := s.Recv()
 	if err != nil {

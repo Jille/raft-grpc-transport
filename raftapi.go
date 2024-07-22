@@ -20,6 +20,7 @@ type raftAPI struct {
 var _ raft.Transport = raftAPI{}
 var _ raft.WithClose = raftAPI{}
 var _ raft.WithPeers = raftAPI{}
+var _ raft.WithPreVote = raftAPI{}
 
 type conn struct {
 	clientConn *grpc.ClientConn
@@ -106,6 +107,20 @@ func (r raftAPI) TimeoutNow(id raft.ServerID, target raft.ServerAddress, args *r
 		return err
 	}
 	*resp = *decodeTimeoutNowResponse(ret)
+	return nil
+}
+
+// RequestPreVote is the command used by a candidate to ask a Raft peer for a vote in an election.
+func (r raftAPI) RequestPreVote(id raft.ServerID, target raft.ServerAddress, args *raft.RequestPreVoteRequest, resp *raft.RequestPreVoteResponse) error {
+	c, err := r.getPeer(target)
+	if err != nil {
+		return err
+	}
+	ret, err := c.RequestPreVote(context.TODO(), encodeRequestPreVoteRequest(args))
+	if err != nil {
+		return err
+	}
+	*resp = *decodeRequestPreVoteResponse(ret)
 	return nil
 }
 
