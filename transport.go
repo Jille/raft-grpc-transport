@@ -27,6 +27,10 @@ type Manager struct {
 
 	connectionsMtx sync.Mutex
 	connections    map[raft.ServerAddress]*conn
+
+	shutdown     bool
+	shutdownCh   chan struct{}
+	shutdownLock sync.Mutex
 }
 
 // New creates both components of raft-grpc-transport: a gRPC service and a Raft Transport.
@@ -37,6 +41,8 @@ func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption, options
 
 		rpcChan:     make(chan raft.RPC),
 		connections: map[raft.ServerAddress]*conn{},
+
+		shutdownCh: make(chan struct{}),
 	}
 	for _, opt := range options {
 		opt(m)
@@ -55,6 +61,19 @@ func (m *Manager) Transport() raft.Transport {
 }
 
 func (m *Manager) Close() error {
+	m.shutdownLock.Lock()
+	defer m.shutdownLock.Unlock()
+
+	if m.shutdown {
+		return nil
+	}
+
+	close(m.shutdownCh)
+	m.shutdown = true
+	return m.disconnectAll()
+}
+
+func (m *Manager) disconnectAll() error {
 	m.connectionsMtx.Lock()
 	defer m.connectionsMtx.Unlock()
 
