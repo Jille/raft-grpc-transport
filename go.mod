@@ -3,7 +3,6 @@ module github.com/Jille/raft-grpc-transport
 go 1.13
 
 require (
-	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.9
 	github.com/google/gofuzz v1.2.0
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
