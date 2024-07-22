@@ -17,6 +17,9 @@ type raftAPI struct {
 	manager *Manager
 }
 
+var _ raft.Transport = raftAPI{}
+var _ raft.WithClose = raftAPI{}
+
 type conn struct {
 	clientConn *grpc.ClientConn
 	client     pb.RaftTransportClient
@@ -281,4 +284,8 @@ func (r raftAPI) SetHeartbeatHandler(cb func(rpc raft.RPC)) {
 	r.manager.heartbeatFuncMtx.Lock()
 	r.manager.heartbeatFunc = cb
 	r.manager.heartbeatFuncMtx.Unlock()
+}
+
+func (r raftAPI) Close() error {
+	return r.manager.Close()
 }
