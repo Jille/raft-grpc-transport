@@ -9,6 +9,8 @@ import (
 	pb "github.com/Jille/raft-grpc-transport/proto"
 	"github.com/hashicorp/raft"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // These are calls from the Raft engine that we need to send out over gRPC.
@@ -74,12 +76,34 @@ func (r raftAPI) AppendEntries(id raft.ServerID, target raft.ServerAddress, args
 		ctx, cancel = context.WithTimeout(ctx, r.manager.heartbeatTimeout)
 		defer cancel()
 	}
-	ret, err := c.AppendEntries(ctx, encodeAppendEntriesRequest(args))
+	appendEntriesRequest := encodeAppendEntriesRequest(args)
+	ret, err := c.AppendEntries(ctx, appendEntriesRequest)
+	if statusErr, ok := status.FromError(err); ok && statusErr.Code() == codes.ResourceExhausted {
+		chunkedRet, chunkedErr := r.appendEntriesChunked(ctx, r.manager.appendEntriesChunkSize, c, appendEntriesRequest)
+		if statusErr, ok := status.FromError(chunkedErr); ok && statusErr.Code() != codes.Unimplemented {
+			ret, err = chunkedRet, chunkedErr
+		}
+	}
 	if err != nil {
 		return err
 	}
 	*resp = *decodeAppendEntriesResponse(ret)
 	return nil
+}
+
+// AppendEntries sends the appropriate RPC to the target node.
+func (r raftAPI) appendEntriesChunked(ctx context.Context, chunkSize int, c pb.RaftTransportClient, appendEntriesRequest *pb.AppendEntriesRequest) (*pb.AppendEntriesResponse, error) {
+	stream, err := c.AppendEntriesChunked(ctx)
+	if err != nil {
+		return &pb.AppendEntriesResponse{}, err
+	}
+	defer stream.CloseSend()
+
+	if err := sendAppendEntriesChunkedRequest(chunkSize, stream, appendEntriesRequest); err != nil {
+		return &pb.AppendEntriesResponse{}, err
+	}
+
+	return stream.CloseAndRecv()
 }
 
 // RequestVote sends the appropriate RPC to the target node.
@@ -161,6 +185,11 @@ func (r raftAPI) InstallSnapshot(id raft.ServerID, target raft.ServerAddress, re
 	return nil
 }
 
+type AppendEntriesPipelineInterface interface {
+	grpc.ClientStream
+	Recv() (*pb.AppendEntriesResponse, error)
+}
+
 // AppendEntriesPipeline returns an interface that can be used to pipeline
 // AppendEntries requests.
 func (r raftAPI) AppendEntriesPipeline(id raft.ServerID, target raft.ServerAddress) (raft.AppendPipeline, error) {
@@ -170,38 +199,52 @@ func (r raftAPI) AppendEntriesPipeline(id raft.ServerID, target raft.ServerAddre
 	}
 	ctx := context.TODO()
 	ctx, cancel := context.WithCancel(ctx)
-	stream, err := c.AppendEntriesPipeline(ctx)
+	var stream AppendEntriesPipelineInterface
+	stream, err = c.AppendEntriesChunkedPipeline(ctx)
+	if statusErr, ok := status.FromError(err); ok && statusErr.Code() == codes.Unimplemented {
+		stream, err = c.AppendEntriesPipeline(ctx)
+	}
 	if err != nil {
 		cancel()
 		return nil, err
 	}
-	rpa := raftPipelineAPI{
-		stream:     stream,
-		cancel:     cancel,
-		inflightCh: make(chan *appendFuture, 20),
-		doneCh:     make(chan raft.AppendFuture, 20),
+	rpa := &raftPipelineAPI{
+		stream:                 stream,
+		appendEntriesChunkSize: r.manager.appendEntriesChunkSize,
+		cancel:                 cancel,
+		inflightCh:             make(chan *appendFuture, 20),
+		doneCh:                 make(chan raft.AppendFuture, 20),
 	}
 	go rpa.receiver()
 	return rpa, nil
 }
 
 type raftPipelineAPI struct {
-	stream        pb.RaftTransport_AppendEntriesPipelineClient
-	cancel        func()
-	inflightChMtx sync.Mutex
-	inflightCh    chan *appendFuture
-	doneCh        chan raft.AppendFuture
+	stream                 AppendEntriesPipelineInterface
+	appendEntriesChunkSize int
+	cancel                 func()
+	inflightChMtx          sync.Mutex
+	inflightCh             chan *appendFuture
+	doneCh                 chan raft.AppendFuture
 }
 
 // AppendEntries is used to add another request to the pipeline.
 // The send may block which is an effective form of back-pressure.
-func (r raftPipelineAPI) AppendEntries(req *raft.AppendEntriesRequest, resp *raft.AppendEntriesResponse) (raft.AppendFuture, error) {
+func (r *raftPipelineAPI) AppendEntries(req *raft.AppendEntriesRequest, resp *raft.AppendEntriesResponse) (raft.AppendFuture, error) {
 	af := &appendFuture{
 		start:   time.Now(),
 		request: req,
 		done:    make(chan struct{}),
 	}
-	if err := r.stream.Send(encodeAppendEntriesRequest(req)); err != nil {
+	var err error
+	appendEntriesRequest := encodeAppendEntriesRequest(req)
+	switch stream := r.stream.(type) {
+	case pb.RaftTransport_AppendEntriesPipelineClient:
+		err = stream.Send(appendEntriesRequest)
+	case pb.RaftTransport_AppendEntriesChunkedPipelineClient:
+		err = sendAppendEntriesChunkedRequest(r.appendEntriesChunkSize, stream, appendEntriesRequest)
+	}
+	if err != nil {
 		return nil, err
 	}
 	r.inflightChMtx.Lock()
@@ -216,12 +259,12 @@ func (r raftPipelineAPI) AppendEntries(req *raft.AppendEntriesRequest, resp *raf
 
 // Consumer returns a channel that can be used to consume
 // response futures when they are ready.
-func (r raftPipelineAPI) Consumer() <-chan raft.AppendFuture {
+func (r *raftPipelineAPI) Consumer() <-chan raft.AppendFuture {
 	return r.doneCh
 }
 
 // Close closes the pipeline and cancels all inflight RPCs
-func (r raftPipelineAPI) Close() error {
+func (r *raftPipelineAPI) Close() error {
 	r.cancel()
 	r.inflightChMtx.Lock()
 	close(r.inflightCh)
@@ -229,7 +272,7 @@ func (r raftPipelineAPI) Close() error {
 	return nil
 }
 
-func (r raftPipelineAPI) receiver() {
+func (r *raftPipelineAPI) receiver() {
 	for af := range r.inflightCh {
 		msg, err := r.stream.Recv()
 		if err != nil {

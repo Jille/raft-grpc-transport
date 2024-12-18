@@ -25,8 +25,9 @@ type Manager struct {
 	heartbeatFuncMtx sync.Mutex
 	heartbeatTimeout time.Duration
 
-	connectionsMtx sync.Mutex
-	connections    map[raft.ServerAddress]*conn
+	connectionsMtx         sync.Mutex
+	connections            map[raft.ServerAddress]*conn
+	appendEntriesChunkSize int
 
 	shutdown     bool
 	shutdownCh   chan struct{}
@@ -39,8 +40,9 @@ func New(localAddress raft.ServerAddress, dialOptions []grpc.DialOption, options
 		localAddress: localAddress,
 		dialOptions:  dialOptions,
 
-		rpcChan:     make(chan raft.RPC),
-		connections: map[raft.ServerAddress]*conn{},
+		rpcChan:                make(chan raft.RPC),
+		connections:            map[raft.ServerAddress]*conn{},
+		appendEntriesChunkSize: 4*1024*1024 - 10, // same as gRPC default value (minus some overhead)
 
 		shutdownCh: make(chan struct{}),
 	}

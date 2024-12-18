@@ -11,3 +11,13 @@ func WithHeartbeatTimeout(d time.Duration) Option {
 		m.heartbeatTimeout = d
 	}
 }
+
+// WithAppendEntriesChunkSize configures the chunk size to use when switching
+// to chunked AppendEntries. The default value is 4MB (the gRPC default), but
+// as there is no way to auto-discover that value, it's up to the developer
+// to configure this, if the default value is not appropriate.
+func WithAppendEntriesChunkSize(v int) Option {
+	return func(m *Manager) {
+		m.appendEntriesChunkSize = v
+	}
+}

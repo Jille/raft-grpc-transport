@@ -24,8 +24,11 @@ const _ = grpc.SupportPackageIsVersion7
 type RaftTransportClient interface {
 	// AppendEntriesPipeline opens an AppendEntries message stream.
 	AppendEntriesPipeline(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_AppendEntriesPipelineClient, error)
+	AppendEntriesChunkedPipeline(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_AppendEntriesChunkedPipelineClient, error)
 	// AppendEntries performs a single append entries request / response.
 	AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error)
+	// AppendEntries performs a single append entries request / response for request larger than the max grpc message size.
+	AppendEntriesChunked(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_AppendEntriesChunkedClient, error)
 	// RequestVote is the command used by a candidate to ask a Raft peer for a vote in an election.
 	RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error)
 	// TimeoutNow is used to start a leadership transfer to the target node.
@@ -75,6 +78,37 @@ func (x *raftTransportAppendEntriesPipelineClient) Recv() (*AppendEntriesRespons
 	return m, nil
 }
 
+func (c *raftTransportClient) AppendEntriesChunkedPipeline(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_AppendEntriesChunkedPipelineClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RaftTransport_ServiceDesc.Streams[1], "/RaftTransport/AppendEntriesChunkedPipeline", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &raftTransportAppendEntriesChunkedPipelineClient{stream}
+	return x, nil
+}
+
+type RaftTransport_AppendEntriesChunkedPipelineClient interface {
+	Send(*AppendEntriesChunkedRequest) error
+	Recv() (*AppendEntriesResponse, error)
+	grpc.ClientStream
+}
+
+type raftTransportAppendEntriesChunkedPipelineClient struct {
+	grpc.ClientStream
+}
+
+func (x *raftTransportAppendEntriesChunkedPipelineClient) Send(m *AppendEntriesChunkedRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *raftTransportAppendEntriesChunkedPipelineClient) Recv() (*AppendEntriesResponse, error) {
+	m := new(AppendEntriesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *raftTransportClient) AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error) {
 	out := new(AppendEntriesResponse)
 	err := c.cc.Invoke(ctx, "/RaftTransport/AppendEntries", in, out, opts...)
@@ -82,6 +116,40 @@ func (c *raftTransportClient) AppendEntries(ctx context.Context, in *AppendEntri
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *raftTransportClient) AppendEntriesChunked(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_AppendEntriesChunkedClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RaftTransport_ServiceDesc.Streams[2], "/RaftTransport/AppendEntriesChunked", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &raftTransportAppendEntriesChunkedClient{stream}
+	return x, nil
+}
+
+type RaftTransport_AppendEntriesChunkedClient interface {
+	Send(*AppendEntriesChunkedRequest) error
+	CloseAndRecv() (*AppendEntriesResponse, error)
+	grpc.ClientStream
+}
+
+type raftTransportAppendEntriesChunkedClient struct {
+	grpc.ClientStream
+}
+
+func (x *raftTransportAppendEntriesChunkedClient) Send(m *AppendEntriesChunkedRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *raftTransportAppendEntriesChunkedClient) CloseAndRecv() (*AppendEntriesResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(AppendEntriesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *raftTransportClient) RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error) {
@@ -103,7 +171,7 @@ func (c *raftTransportClient) TimeoutNow(ctx context.Context, in *TimeoutNowRequ
 }
 
 func (c *raftTransportClient) InstallSnapshot(ctx context.Context, opts ...grpc.CallOption) (RaftTransport_InstallSnapshotClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RaftTransport_ServiceDesc.Streams[1], "/RaftTransport/InstallSnapshot", opts...)
+	stream, err := c.cc.NewStream(ctx, &RaftTransport_ServiceDesc.Streams[3], "/RaftTransport/InstallSnapshot", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +219,11 @@ func (c *raftTransportClient) RequestPreVote(ctx context.Context, in *RequestPre
 type RaftTransportServer interface {
 	// AppendEntriesPipeline opens an AppendEntries message stream.
 	AppendEntriesPipeline(RaftTransport_AppendEntriesPipelineServer) error
+	AppendEntriesChunkedPipeline(RaftTransport_AppendEntriesChunkedPipelineServer) error
 	// AppendEntries performs a single append entries request / response.
 	AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error)
+	// AppendEntries performs a single append entries request / response for request larger than the max grpc message size.
+	AppendEntriesChunked(RaftTransport_AppendEntriesChunkedServer) error
 	// RequestVote is the command used by a candidate to ask a Raft peer for a vote in an election.
 	RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error)
 	// TimeoutNow is used to start a leadership transfer to the target node.
@@ -171,8 +242,14 @@ type UnimplementedRaftTransportServer struct {
 func (UnimplementedRaftTransportServer) AppendEntriesPipeline(RaftTransport_AppendEntriesPipelineServer) error {
 	return status.Errorf(codes.Unimplemented, "method AppendEntriesPipeline not implemented")
 }
+func (UnimplementedRaftTransportServer) AppendEntriesChunkedPipeline(RaftTransport_AppendEntriesChunkedPipelineServer) error {
+	return status.Errorf(codes.Unimplemented, "method AppendEntriesChunkedPipeline not implemented")
+}
 func (UnimplementedRaftTransportServer) AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AppendEntries not implemented")
+}
+func (UnimplementedRaftTransportServer) AppendEntriesChunked(RaftTransport_AppendEntriesChunkedServer) error {
+	return status.Errorf(codes.Unimplemented, "method AppendEntriesChunked not implemented")
 }
 func (UnimplementedRaftTransportServer) RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestVote not implemented")
@@ -225,6 +302,32 @@ func (x *raftTransportAppendEntriesPipelineServer) Recv() (*AppendEntriesRequest
 	return m, nil
 }
 
+func _RaftTransport_AppendEntriesChunkedPipeline_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RaftTransportServer).AppendEntriesChunkedPipeline(&raftTransportAppendEntriesChunkedPipelineServer{stream})
+}
+
+type RaftTransport_AppendEntriesChunkedPipelineServer interface {
+	Send(*AppendEntriesResponse) error
+	Recv() (*AppendEntriesChunkedRequest, error)
+	grpc.ServerStream
+}
+
+type raftTransportAppendEntriesChunkedPipelineServer struct {
+	grpc.ServerStream
+}
+
+func (x *raftTransportAppendEntriesChunkedPipelineServer) Send(m *AppendEntriesResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *raftTransportAppendEntriesChunkedPipelineServer) Recv() (*AppendEntriesChunkedRequest, error) {
+	m := new(AppendEntriesChunkedRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func _RaftTransport_AppendEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AppendEntriesRequest)
 	if err := dec(in); err != nil {
@@ -241,6 +344,32 @@ func _RaftTransport_AppendEntries_Handler(srv interface{}, ctx context.Context, 
 		return srv.(RaftTransportServer).AppendEntries(ctx, req.(*AppendEntriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _RaftTransport_AppendEntriesChunked_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RaftTransportServer).AppendEntriesChunked(&raftTransportAppendEntriesChunkedServer{stream})
+}
+
+type RaftTransport_AppendEntriesChunkedServer interface {
+	SendAndClose(*AppendEntriesResponse) error
+	Recv() (*AppendEntriesChunkedRequest, error)
+	grpc.ServerStream
+}
+
+type raftTransportAppendEntriesChunkedServer struct {
+	grpc.ServerStream
+}
+
+func (x *raftTransportAppendEntriesChunkedServer) SendAndClose(m *AppendEntriesResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *raftTransportAppendEntriesChunkedServer) Recv() (*AppendEntriesChunkedRequest, error) {
+	m := new(AppendEntriesChunkedRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _RaftTransport_RequestVote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -352,6 +481,17 @@ var RaftTransport_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "AppendEntriesPipeline",
 			Handler:       _RaftTransport_AppendEntriesPipeline_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "AppendEntriesChunkedPipeline",
+			Handler:       _RaftTransport_AppendEntriesChunkedPipeline_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "AppendEntriesChunked",
+			Handler:       _RaftTransport_AppendEntriesChunked_Handler,
 			ClientStreams: true,
 		},
 		{

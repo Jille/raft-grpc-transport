@@ -7,9 +7,12 @@ import "google/protobuf/timestamp.proto";
 service RaftTransport {
   // AppendEntriesPipeline opens an AppendEntries message stream.
   rpc AppendEntriesPipeline(stream AppendEntriesRequest) returns (stream AppendEntriesResponse) {}
+  rpc AppendEntriesChunkedPipeline(stream AppendEntriesChunkedRequest) returns (stream AppendEntriesResponse) {}
 
   // AppendEntries performs a single append entries request / response.
   rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse) {}
+  // AppendEntries performs a single append entries request / response for request larger than the max grpc message size.
+  rpc AppendEntriesChunked(stream AppendEntriesChunkedRequest) returns (AppendEntriesResponse) {}
   // RequestVote is the command used by a candidate to ask a Raft peer for a vote in an election.
   rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse) {}
   // TimeoutNow is used to start a leadership transfer to the target node.
@@ -51,6 +54,11 @@ message AppendEntriesRequest {
 	uint64 prev_log_term = 5;
 	repeated Log entries = 6;
 	uint64 leader_commit_index = 7;
+}
+
+message AppendEntriesChunkedRequest {
+	int64 remaining_bytes = 1; // number of bytes of the same request AFTER this chunk
+	bytes chunk = 2;
 }
 
 message AppendEntriesResponse {

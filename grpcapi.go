@@ -60,6 +60,20 @@ func (g gRPCAPI) AppendEntries(ctx context.Context, req *pb.AppendEntriesRequest
 	return encodeAppendEntriesResponse(resp.(*raft.AppendEntriesResponse)), nil
 }
 
+func (g gRPCAPI) AppendEntriesChunked(stream pb.RaftTransport_AppendEntriesChunkedServer) error {
+	appendEntriesRequest, err := receiveAppendEntriesChunkedRequest(stream)
+	if err != nil {
+		return err
+	}
+
+	resp, err := g.handleRPC(decodeAppendEntriesRequest(appendEntriesRequest), nil)
+	if err != nil {
+		return err
+	}
+
+	return stream.SendAndClose(encodeAppendEntriesResponse(resp.(*raft.AppendEntriesResponse)))
+}
+
 func (g gRPCAPI) RequestVote(ctx context.Context, req *pb.RequestVoteRequest) (*pb.RequestVoteResponse, error) {
 	resp, err := g.handleRPC(decodeRequestVoteRequest(req), nil)
 	if err != nil {
@@ -129,6 +143,22 @@ func (g gRPCAPI) AppendEntriesPipeline(s pb.RaftTransport_AppendEntriesPipelineS
 		if err != nil {
 			// TODO(quis): One failure doesn't have to break the entire stream?
 			// Or does it all go wrong when it's out of order anyway?
+			return err
+		}
+		if err := s.Send(encodeAppendEntriesResponse(resp.(*raft.AppendEntriesResponse))); err != nil {
+			return err
+		}
+	}
+}
+
+func (g gRPCAPI) AppendEntriesChunkedPipeline(s pb.RaftTransport_AppendEntriesChunkedPipelineServer) error {
+	for {
+		msg, err := receiveAppendEntriesChunkedRequest(s)
+		if err != nil {
+			return err
+		}
+		resp, err := g.handleRPC(decodeAppendEntriesRequest(msg), nil)
+		if err != nil {
 			return err
 		}
 		if err := s.Send(encodeAppendEntriesResponse(resp.(*raft.AppendEntriesResponse))); err != nil {

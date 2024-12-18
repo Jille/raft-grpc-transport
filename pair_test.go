@@ -3,6 +3,8 @@ package transport_test
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -63,8 +65,93 @@ func makeTestPair(ctx context.Context, t *testing.T) (raft.Transport, raft.Trans
 	return t1.Transport(), t2.Transport(), shutdownSig
 }
 
-func TestAppendEntries(t *testing.T) {
-	defer goleak.VerifyNone(t)
+func testAppendEntries(t *testing.T, usePipeline bool) {
+	randBytes := func(n int) []byte {
+		buf := make([]byte, n)
+		read, err := rand.Read(buf)
+		if err != nil {
+			t.Fatalf("error generating random byte slice: %s", err.Error())
+		}
+		if read != n {
+			t.Fatalf("error generating random byte slice: read %d bytes, expected %d", read, n)
+		}
+		return buf
+	}
+
+	requests := []struct {
+		name string
+		raft.AppendEntriesRequest
+		// response
+		lastLog uint64
+	}{
+		{
+			name: "small message: no chunking",
+			AppendEntriesRequest: raft.AppendEntriesRequest{
+				Leader: []byte{3, 2, 1},
+				Entries: []*raft.Log{
+					{Type: raft.LogNoop, Extensions: []byte{1}, Data: []byte{55}},
+				},
+			},
+			lastLog: 12396,
+		},
+		{
+			name: "large message (data only): chunking",
+			AppendEntriesRequest: raft.AppendEntriesRequest{
+				Leader: []byte{1, 2, 3},
+				Entries: []*raft.Log{
+					{Type: raft.LogNoop, Extensions: []byte{1}, Data: randBytes(8 * 1024 * 1024)},
+				},
+			},
+			lastLog: 12397,
+		},
+		{
+			name: "large message (extensions and data): chunking",
+			AppendEntriesRequest: raft.AppendEntriesRequest{
+				Leader: []byte{1, 3, 2},
+				Entries: []*raft.Log{
+					{Type: raft.LogNoop, Extensions: randBytes(8 * 1024 * 1024), Data: randBytes(8 * 1024 * 1024)},
+				},
+			},
+			lastLog: 12398,
+		},
+		{
+			name: "large message (extensions only): chunking",
+			AppendEntriesRequest: raft.AppendEntriesRequest{
+				Leader: []byte{3, 1, 2},
+				Entries: []*raft.Log{
+					{Type: raft.LogNoop, Extensions: randBytes(8 * 1024 * 1024), Data: []byte{55}},
+				},
+			},
+			lastLog: 12399,
+		},
+		{
+			name: "large message (by summing data and extensions): chunking",
+			AppendEntriesRequest: raft.AppendEntriesRequest{
+				Leader: []byte{2, 1, 3},
+				Entries: []*raft.Log{
+					{Type: raft.LogNoop, Extensions: randBytes(3 * 1024 * 1024), Data: randBytes(3 * 1024 * 1024)},
+				},
+			},
+			lastLog: 12400,
+		},
+		{
+			name: "many smaller log entries: chunking",
+			AppendEntriesRequest: raft.AppendEntriesRequest{
+				Leader: []byte{2, 1, 3},
+				Entries: []*raft.Log{
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+					{Type: raft.LogNoop, Extensions: randBytes(256 * 1024), Data: randBytes(256 * 1024)},
+				},
+			},
+			lastLog: 12400,
+		},
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t1, t2, shutdownSig := makeTestPair(ctx, t)
@@ -75,41 +162,76 @@ func TestAppendEntries(t *testing.T) {
 
 	stop := make(chan struct{})
 	go func() {
-		for {
+		for idx := 0; ; idx++ {
 			select {
 			case <-stop:
 				return
 			case rpc := <-t2.Consumer():
-				if got, want := rpc.Command.(*raft.AppendEntriesRequest).Leader, []byte{3, 2, 1}; !bytes.Equal(got, want) {
+				if got, want := rpc.Command.(*raft.AppendEntriesRequest).Leader, requests[idx].AppendEntriesRequest.Leader; !bytes.Equal(got, want) {
 					t.Errorf("request.Leader = %v, want %v", got, want)
 				}
-				if got, want := rpc.Command.(*raft.AppendEntriesRequest).Entries, []*raft.Log{
-					{Type: raft.LogNoop, Extensions: []byte{1}, Data: []byte{55}},
-				}; !reflect.DeepEqual(got, want) {
+				if got, want := rpc.Command.(*raft.AppendEntriesRequest).Entries, requests[idx].AppendEntriesRequest.Entries; !reflect.DeepEqual(got, want) {
 					t.Errorf("request.Entries = %v, want %v", got, want)
+					fmt.Println(len(got[0].Data), len(got[0].Extensions), len(want[0].Data), len(want[0].Extensions))
 				}
 				rpc.Respond(&raft.AppendEntriesResponse{
 					Success: true,
-					LastLog: 12396,
+					LastLog: requests[idx].lastLog,
 				}, nil)
 			}
 		}
 	}()
 
 	var resp raft.AppendEntriesResponse
-	if err := t1.AppendEntries("t2", "t2", &raft.AppendEntriesRequest{
-		Leader: []byte{3, 2, 1},
-		Entries: []*raft.Log{
-			{Type: raft.LogNoop, Extensions: []byte{1}, Data: []byte{55}},
-		},
-	}, &resp); err != nil {
-		t.Errorf("AppendEntries() failed: %v", err)
+
+	// choose to test the simple or pipelined AppendEntries
+	var appendEntries func(*raft.AppendEntriesRequest, *raft.AppendEntriesResponse) error
+	if usePipeline {
+		p, err := t1.AppendEntriesPipeline("t2", "t2")
+		if err != nil {
+			t.Fatalf("error opening AppendEntries pipeline: %s", err.Error())
+		}
+		defer p.Close()
+		appendEntries = func(req *raft.AppendEntriesRequest, resp *raft.AppendEntriesResponse) error {
+			future, err := p.AppendEntries(req, resp)
+			if err != nil {
+				return err
+			}
+			if err := future.Error(); err != nil {
+				return err
+			}
+			*resp = *future.Response()
+			return nil
+		}
+	} else {
+		appendEntries = func(req *raft.AppendEntriesRequest, resp *raft.AppendEntriesResponse) error {
+			return t1.AppendEntries("t2", "t2", req, resp)
+		}
 	}
-	if got, want := resp.LastLog, uint64(12396); got != want {
-		t.Errorf("resp.LastLog = %v, want %v", got, want)
+
+	for idx := range requests {
+		t.Run(requests[idx].name, func(t *testing.T) {
+			if err := appendEntries(&requests[idx].AppendEntriesRequest, &resp); err != nil {
+				t.Errorf("AppendEntries() failed: %v", err)
+			} else if got, want := resp.LastLog, requests[idx].lastLog; got != want {
+				t.Errorf("resp.LastLog = %v, want %v", got, want)
+			}
+		})
 	}
 
 	close(stop)
+}
+
+func TestAppendEntries(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	testAppendEntries(t, false)
+}
+
+func TestAppendEntriesPipeline(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	testAppendEntries(t, true)
 }
 
 func TestSnapshot(t *testing.T) {
